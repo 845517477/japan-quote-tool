@@ -1,0 +1,10 @@
+﻿server.log
+server.err.log
+test*.html
+check_syntax.ps1
+index-nojs.html
+static.html
+.DS_Store
+node_modules/
+*.log
+.env
