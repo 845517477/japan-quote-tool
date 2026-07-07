@@ -391,6 +391,17 @@ function calc() {
   var currency = document.getElementById('currency').value;
   var mode = MODES[currentMode];
 
+  // === 货值币种统一转换为日元（计算前必须先统一币种）===
+  // 汇率：1 CNY = 23.8794 JPY；1 USD = 6.793 CNY = 6.793×23.8794 ≈ 162.22 JPY
+  var CNY_TO_JPY = 23.8794;
+  var USD_TO_CNY = 1 / 0.1472;
+  if (currency === 'CNY') {
+    cargoValue = cargoValue * CNY_TO_JPY; // CNY → JPY
+  } else if (currency === 'USD') {
+    cargoValue = cargoValue * USD_TO_CNY * CNY_TO_JPY; // USD → CNY → JPY
+  }
+  // currency === 'JPY' 时保持不变
+
   var customTariffRateVal = document.getElementById('custom-tariff-rate').value.trim();
   var customTariffRate = customTariffRateVal ? parseFloat(customTariffRateVal) : null;
   if (totalWeight <= 0) errors.push('请填写货物总重');
@@ -441,27 +452,12 @@ function calc() {
   // 税金取整
   var taxRounded = Math.round(tax);
 
-  // 转换为人民币
-  var serviceFeeCNY, customsDutyCNY, consumptionTaxCNY, localTaxCNY;
-  if (currency === 'JPY') {
-    // 1 CNY = 23.8794 JPY → JPY / 23.8794 = CNY
-    serviceFeeCNY = serviceFee / RATES.CNY;
-    customsDutyCNY = customsDuty / RATES.CNY;
-    consumptionTaxCNY = consumptionTax / RATES.CNY;
-    localTaxCNY = localTax / RATES.CNY;
-  } else if (currency === 'USD') {
-    // 1 CNY = 0.1472 USD → 1 USD = 6.793 CNY → USD / 6.793 = CNY
-    var USD_TO_CNY = 1 / 0.1472;
-    serviceFeeCNY = serviceFee / USD_TO_CNY;
-    customsDutyCNY = customsDuty / USD_TO_CNY;
-    consumptionTaxCNY = consumptionTax / USD_TO_CNY;
-    localTaxCNY = localTax / USD_TO_CNY;
-  } else {
-    serviceFeeCNY = serviceFee;
-    customsDutyCNY = customsDuty;
-    consumptionTaxCNY = consumptionTax;
-    localTaxCNY = localTax;
-  }
+  // 转换为人民币（货值已统一为JPY，统一JPY→CNY换算）
+  // 1 CNY = 23.8794 JPY → JPY / 23.8794 = CNY
+  var serviceFeeCNY = serviceFee / CNY_TO_JPY;
+  var customsDutyCNY = customsDuty / CNY_TO_JPY;
+  var consumptionTaxCNY = consumptionTax / CNY_TO_JPY;
+  var localTaxCNY = localTax / CNY_TO_JPY;
 
   var taxCNY = customsDutyCNY + consumptionTaxCNY + localTaxCNY;
 
