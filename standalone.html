@@ -1,0 +1,731 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中日贸易包税报价工具</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><rect width=%2216%22 height=%2216%22 fill=%22%234299e1%22/><text x=%228%22 y=%2212%22 font-size=%2210%22 fill=%22white%22 text-anchor=%22middle%22>BT</text></svg>">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei",PingFang SC,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
+.container{max-width:720px;margin:0 auto;padding:24px 16px}
+h1{text-align:center;color:#2d3748;padding:28px 0 8px;font-size:1.6rem}
+.subtitle{text-align:center;color:#718096;font-size:0.85rem;margin-bottom:24px}
+
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.card h2{font-size:1rem;color:#4a5568;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;font-weight:600}
+
+.info-bar{background:#ebf8ff;color:#2b6cb2;padding:10px 14px;border-radius:8px;font-size:0.82rem;margin-bottom:16px;line-height:1.6}
+
+.form-group{margin-bottom:14px}
+.form-row{display:flex;gap:12px;flex-wrap:wrap}
+.form-row .form-group{flex:1;min-width:150px}
+label{display:block;font-size:0.82rem;color:#718096;margin-bottom:5px;font-weight:500}
+input,select{width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.95rem;transition:border-color 0.2s,box-shadow 0.2s;outline:none;background:#fff}
+input:focus,select:focus{border-color:#4299e1;box-shadow:0 0 0 3px rgba(66,153,225,0.12)}
+
+.btn{display:inline-block;padding:11px 28px;background:#4299e1;color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer;transition:background 0.2s;font-weight:600;letter-spacing:0.5px}
+.btn:hover{background:#3182ce}
+.btn:active{background:#2b6cb0}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn-sm{padding:6px 16px;font-size:0.88rem;border-radius:6px}
+.btn-add{background:#38a169;color:#fff}
+.btn-add:hover{background:#2f855a}
+.btn-search{background:#4299e1;color:#fff}
+.btn-search:hover{background:#3182ce}
+.btn-gray{background:#718096;color:#fff}
+.btn-gray:hover{background:#5a6a7a}
+
+.result-card{display:none;margin-top:16px}
+.result-card.show{display:block}
+.alert-box{padding:14px 16px;border-radius:10px;margin-bottom:14px;font-size:0.9rem;line-height:1.6}
+.alert-red{background:#fff5f5;border:1.5px solid #fc8181;color:#c53030}
+.alert-green{background:#f0fff4;border:1.5px solid #68d391;color:#276749}
+
+.total-box{background:linear-gradient(135deg,#4299e1,#2b6cb0);border-radius:12px;padding:22px;text-align:center;margin-top:14px}
+.total-label{color:rgba(255,255,255,0.85);font-size:0.88rem}
+.total-value{color:#fff;font-size:2.2rem;font-weight:bold;margin-top:4px}
+
+.fee-table{width:100%;border-collapse:collapse;margin-top:12px}
+.fee-table th,.fee-table td{padding:9px 12px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:0.9rem}
+.fee-table th{color:#718096;font-weight:500;font-size:0.82rem}
+.fee-table td:nth-child(2){text-align:right;font-weight:600}
+.fee-table tr:last-child td{border-bottom:none}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type="number"]{-moz-appearance:textfield}
+
+.box-list{margin-top:12px}
+.box-item{background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.box-item-index{background:#4299e1;color:#fff;font-size:0.75rem;font-weight:bold;padding:2px 8px;border-radius:10px;min-width:28px;text-align:center;flex-shrink:0}
+.box-item-info{flex:1;font-size:0.88rem;color:#4a5568;min-width:180px}
+.box-item-del{background:none;border:none;color:#fc8181;font-size:1rem;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.box-item-del:hover{color:#e53e3e}
+.box-empty{text-align:center;color:#a0aec0;font-size:0.88rem;padding:16px;background:#f7fafc;border-radius:8px;border:1px dashed #e2e8f0}
+
+.mode-group{display:flex;gap:10px;margin-bottom:16px}
+.mode-btn{flex:1;padding:14px 12px;border:2px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;text-align:center;transition:all 0.2s;font-size:0.88rem;color:#4a5568}
+.mode-btn:hover{border-color:#4299e1;background:#ebf8ff}
+.mode-btn.active{border-color:#4299e1;background:#ebf8ff;color:#2b6cb0;box-shadow:0 0 0 3px rgba(66,153,225,0.12)}
+.mode-btn-title{font-weight:bold;font-size:0.95rem}
+
+.formula-box{background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:14px;font-size:0.82rem;color:#4a5568;line-height:1.8}
+.formula-box strong{color:#2b6cb2}
+
+.hs-search-row{display:flex;gap:8px;align-items:flex-end}
+.hs-search-row .form-group{margin-bottom:0;flex:1}
+.hs-results{margin-top:10px;display:none}
+.hs-results.show{display:block}
+.hs-results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.hs-results-header span{font-size:0.82rem;color:#718096}
+.hs-option{background:#f7fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s}
+.hs-option:hover{border-color:#4299e1;background:#ebf8ff}
+.hs-option.selected{border-color:#4299e1;background:#ebf8ff;box-shadow:0 0 0 2px rgba(66,153,225,0.2)}
+.hs-option-code{font-weight:bold;color:#2b6cb2;font-family:monospace;font-size:0.9rem}
+.hs-option-desc{color:#4a5568;font-size:0.85rem;margin-top:4px;line-height:1.5}
+.hs-option-rate{display:inline-block;background:#bee3f8;color:#2b6cb2;padding:2px 8px;border-radius:4px;font-size:0.8rem;font-weight:600;margin-top:6px}
+.hs-option.rate-zero .hs-option-rate{background:#c6f6d5;color:#276749}
+.hs-selected-info{background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:0.88rem;color:#2b6cb2;margin-top:10px;display:none}
+.hs-selected-info.show{display:block}
+
+.footer{text-align:center;padding:20px;color:#a0aec0;font-size:0.78rem}
+
+/* 品名搜索 */
+.name-search-section{margin-top:10px}
+.name-search-row{display:flex;gap:8px;align-items:flex-end}
+.name-search-row .form-group{margin-bottom:0;flex:1}
+.name-hint{font-size:0.78rem;color:#a0aec0;margin-top:4px;line-height:1.5}
+.name-results{margin-top:10px;display:none}
+.name-results.show{display:block}
+.name-result-header{font-size:0.82rem;color:#718096;margin-bottom:8px}
+.name-no-match{text-align:center;color:#a0aec0;font-size:0.88rem;padding:12px}
+.name-section-title{font-size:0.78rem;color:#4299e1;font-weight:600;margin-bottom:6px;padding-top:6px;border-top:1px dashed #bee3f8}
+
+</style></head>
+<body>
+<div class="container">
+  <h1>中日贸易包税报价</h1>
+  <p class="subtitle">选择发货方式，填写信息，自动计算报价</p>
+
+  <div class="info-bar">
+    拦截规则：箱子三边和超过260cm无法运输
+  </div>
+
+  <div class="card">
+    <h2>发货方式</h2>
+    <div class="mode-group">
+      <div class="mode-btn active" onclick="selectMode(0)" id="mode-0">
+        <div class="mode-btn-title">海运货物</div>
+      </div>
+      <div class="mode-btn" onclick="selectMode(1)" id="mode-1">
+        <div class="mode-btn-title">空运普货</div>
+      </div>
+      <div class="mode-btn" onclick="selectMode(2)" id="mode-2">
+        <div class="mode-btn-title">空运带电货物</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>发货信息</h2>
+
+    <div class="form-group">
+      <label>HS编码查询 *</label>
+      <div class="hs-search-row">
+        <div class="form-group">
+          <input type="text" id="hs-code" placeholder="输入HS编码，如 6109" maxlength="10" />
+        </div>
+        <button class="btn btn-search btn-sm" onclick="searchHs()">查询</button>
+      </div>
+      <div class="hs-selected-info" id="hs-selected">
+        已选择：<strong id="hs-selected-text"></strong>
+        <button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelection()">清除</button>
+      </div>
+      <div class="hs-results" id="hs-results"></div>
+    </div>
+
+    <div class="name-search-section">
+      <div class="name-search-row">
+        <div class="form-group">
+          <label>按品名搜索HS编码</label>
+          <input type="text" id="product-name-search" placeholder="输入中文品名，如：牛肉、马肉、鸡肉、猪肉" />
+        </div>
+        <button class="btn btn-search btn-sm" onclick="searchByProductName()">查询</button>
+      </div>
+      <div class="name-hint">输入中文品名，自动匹配HS编码及税率（支持多个匹配结果）</div>
+      <div class="name-results" id="name-results"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>货物总重 (kg) *</label>
+        <input type="number" id="total-weight" placeholder="请输入总重量" min="0.01" step="0.1" />
+      </div>
+      <div class="form-group">
+        <label>总货值</label>
+        <input type="number" id="cargo-value" placeholder="请输入总货值" min="0" step="0.01" />
+      </div>
+      <div class="form-group" style="min-width:120px">
+        <label>币种</label>
+        <select id="currency">
+          <option value="JPY">日元 (JPY)</option>
+          <option value="USD">美元 (USD)</option>
+          <option value="CNY">人民币 (CNY)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>箱子尺寸</h2>
+    <p style="font-size:0.82rem;color:#718096;margin-bottom:12px">添加箱子尺寸，用于检查是否超限（三边和超过260cm拦截）。</p>
+
+    <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:12px">
+      <div class="form-row" style="margin-bottom:10px">
+        <div class="form-group" style="min-width:80px">
+          <label>长 (cm)</label>
+          <input type="number" id="box-length" placeholder="长" min="1" />
+        </div>
+        <div class="form-group" style="min-width:80px">
+          <label>宽 (cm)</label>
+          <input type="number" id="box-width" placeholder="宽" min="1" />
+        </div>
+        <div class="form-group" style="min-width:80px">
+          <label>高 (cm)</label>
+          <input type="number" id="box-height" placeholder="高" min="1" />
+        </div>
+        <div class="form-group" style="min-width:80px">
+          <label>箱数</label>
+          <input type="number" id="box-qty" placeholder="数量" min="1" value="1" />
+        </div>
+      </div>
+      <button class="btn btn-add btn-sm" onclick="addBox()">添加此规格</button>
+    </div>
+
+    <div id="box-list" class="box-list">
+      <div class="box-empty">暂无箱子，点击上方按钮添加（可选）</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="calc()">计算报价</button>
+    <button class="btn btn-gray" onclick="resetForm()">重置</button>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div class="card" style="margin-top:16px">
+      <div id="result-content"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">中日贸易包税报价工具 - v2.4</div>
+
+<script>
+var MODES = [
+  { name: '海运货物', rate: 7 },
+  { name: '空运普货', rate: 12.5 },
+  { name: '空运带电货物', rate: 16 }
+];
+
+var RATES = { USD: 1, JPY: 150, CNY: 7.2 };
+
+var currentMode = 0;
+var hsData = {};
+var selectedHs = null;
+
+var boxes = [];
+
+// 中文品名 → 日语关键词 对照表
+var CN_JP_DICT = [
+  // === 活动物 01类 ===
+  { cn: ['马', '赛马', '活马', '纯种马', '阿拉伯马'], jp: ['馬', '軽種馬', 'サラブレッド', 'アラブ', 'アングロアラブ'] },
+  { cn: ['驴'], jp: ['ろ馬'] },
+  { cn: ['骡', '驴骡'], jp: ['ら馬'] },
+  { cn: ['牛', '肉牛', '活牛', '育成牛', '架子牛'], jp: ['牛', '骨付き', '骨付きでない'] },
+  { cn: ['奶牛', '乳牛'], jp: ['乳用', '泌乳'] },
+  { cn: ['种牛', '繁殖用牛', '纯种牛'], jp: ['純粋種', '繁殖用'] },
+  { cn: ['猪', '活猪', '肉猪'], jp: ['豚'] },
+  { cn: ['羊', '绵羊'], jp: ['羊'] },
+  { cn: ['山羊'], jp: ['山羊', 'やぎ'] },
+  { cn: ['鸡', '活鸡', '肉鸡', '蛋鸡', '雏鸡'], jp: ['鶏', 'ガルルス'] },
+  { cn: ['鸭'], jp: ['あひる'] },
+  { cn: ['鹅'], jp: ['ちょう'] },
+  { cn: ['火鸡'], jp: ['七面鳥'] },
+  { cn: ['鹌鹑'], jp: ['ほろほろ鳥'] },
+  { cn: ['兔', '兔子'], jp: ['うさぎ'] },
+  { cn: ['蜜蜂', '蜂群'], jp: ['蜂'] },
+  { cn: ['爬虫类', '蜥蜴', '蛇'], jp: ['爬虫類'] },
+  { cn: ['鲸鱼', '鲸'], jp: ['くじら'] },
+  { cn: ['灵长类', '猴', '猩猩'], jp: ['霊長類'] },
+  // === 鲜冷肉 0201-0206 ===
+  { cn: ['牛肉', '牛排', '牛腩', '绞牛肉', '生牛肉', '冷牛肉'], jp: ['牛肉', '牛の肉', '枝肉', '半丸枝肉'] },
+  { cn: ['马肉', '鲜马肉', '冷藏马肉'], jp: ['馬肉', '馬の肉', '馬'] },
+  { cn: ['猪肉', '冷猪肉', '冷藏猪肉'], jp: ['豚の肉', 'いのしし'] },
+  { cn: ['羊肉', '冷羊肉', '羔羊肉'], jp: ['羊の肉', '子羊'] },
+  { cn: ['山羊肉'], jp: ['山羊', 'やぎ'] },
+  { cn: ['鸡肉', '冷鸡肉', '生鸡肉'], jp: ['鶏肉', 'ガルルス'] },
+  { cn: ['鸭肉'], jp: ['あひる'] },
+  { cn: ['鹅肉'], jp: ['ちょう'] },
+  { cn: ['火鸡肉'], jp: ['七面鳥'] },
+  { cn: ['兔肉'], jp: ['うさぎ'] },
+  // === 冷冻肉 0207-0210 ===
+  { cn: ['冻牛肉', '冷冻牛肉'], jp: ['牛肉', '牛の肉', '冷凍'] },
+  { cn: ['冻马肉', '冷冻马肉'], jp: ['馬肉', '馬', '冷凍'] },
+  { cn: ['冻猪肉', '冷冻猪肉'], jp: ['豚の肉', '冷凍'] },
+  { cn: ['冻鸡肉', '冷冻鸡肉'], jp: ['鶏肉', 'ガルルス', '冷凍'] },
+  { cn: ['冻鸭肉', '冷冻鸭肉'], jp: ['あひる', '冷凍'] },
+  // === 内脏 0206-0208 ===
+  { cn: ['牛肝', '牛肝脏', '肝脏', '肝'], jp: ['肝脏', '肝'] },
+  { cn: ['牛舌', '牛舌头'], jp: ['舌'] },
+  { cn: ['牛心', '牛心脏', '心脏'], jp: ['心臓'] },
+  { cn: ['猪肝', '猪肝脏'], jp: ['豚', '肝脏', '肝'] },
+  { cn: ['猪心', '猪心脏'], jp: ['豚', '心臓'] },
+  { cn: ['猪舌', '猪舌头'], jp: ['豚', '舌'] },
+  { cn: ['鸡肝', '鸡内脏'], jp: ['鶏', '内脏'] },
+  { cn: ['牛头肉', '牛脸颊'], jp: ['ほほ肉', '頭肉'] },
+  { cn: ['牛心', '牛肺', '牛胃', '牛肾'], jp: ['臓器'] },
+  { cn: ['猪头肉', '猪脸颊'], jp: ['豚', 'ほほ肉', '頭肉'] },
+  // === 肉制品 0210 ===
+  { cn: ['肉干', '牛肉干', '马肉干'], jp: ['乾燥', 'くん製'] },
+  { cn: ['香肠', '腊肠', '灌肠'], jp: ['ソーセージ', 'サラミ'] },
+  { cn: ['肉罐头', '罐头肉'], jp: ['缶詰'] },
+  { cn: ['培根', '腌肉'], jp: ['塩蔵', 'くん製'] },
+  { cn: ['火腿', '猪腿', '猪前腿', '猪后腿'], jp: ['ハム'] },
+  // === 皮革 ===
+  { cn: ['牛皮', '牛皮革'], jp: ['牛皮', '牛革'] },
+  { cn: ['马皮', '马皮革'], jp: ['馬皮', '馬革'] },
+  // === 通用 ===
+  { cn: ['骨', '骨头'], jp: ['骨'] },
+  { cn: ['脂肪', '油脂', '牛脂', '猪油'], jp: ['脂肪', '脂'] },
+  { cn: ['血', '血液'], jp: ['血'] },
+];
+
+// 中文品名 → 日语关键词搜索
+function getJapaneseKeywords(cnName) {
+  if (!cnName) return [];
+  var results = [];
+  for (var i = 0; i < CN_JP_DICT.length; i++) {
+    var entry = CN_JP_DICT[i];
+    for (var j = 0; j < entry.cn.length; j++) {
+      if (cnName.indexOf(entry.cn[j]) >= 0) {
+        for (var k = 0; k < entry.jp.length; k++) {
+          if (results.indexOf(entry.jp[k]) < 0) results.push(entry.jp[k]);
+        }
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+// 按品名搜索HS编码
+function searchByProductName() {
+  var cnName = document.getElementById('product-name-search').value.trim();
+  var resultsEl = document.getElementById('name-results');
+
+  if (!cnName) {
+    resultsEl.classList.remove('show');
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  if (Object.keys(hsData).length === 0) {
+    resultsEl.classList.add('show');
+    resultsEl.innerHTML = '<div class="alert-box alert-red">HS编码数据正在加载中，请稍后重试。</div>';
+    return;
+  }
+
+  var keywords = getJapaneseKeywords(cnName);
+
+  if (keywords.length === 0) {
+    resultsEl.classList.add('show');
+    resultsEl.innerHTML = '<div class="name-no-match">未找到与「' + cnName + '」相关的HS编码关键词，请尝试其他品名，或直接使用HS编码查询。</div>';
+    return;
+  }
+
+  // 搜索HS数据库
+  var matches = [];
+  var keys = Object.keys(hsData);
+  for (var i = 0; i < keys.length; i++) {
+    var code = keys[i];
+    var items = hsData[code];
+    for (var j = 0; j < items.length; j++) {
+      var desc = items[j].desc;
+      var found = false;
+      for (var k = 0; k < keywords.length; k++) {
+        if (desc.indexOf(keywords[k]) >= 0) {
+          found = true;
+          break;
+        }
+      }
+      if (found) {
+        matches.push({ code: code, desc: items[j].desc, rate: items[j].rate, rate_pct: items[j].rate_pct });
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    resultsEl.classList.add('show');
+    resultsEl.innerHTML = '<div class="name-no-match">关键词「' + keywords.join('、') + '」未匹配到HS编码，请尝试其他品名。</div>';
+    return;
+  }
+
+  // 按HS编码+描述去重
+  var seen = {};
+  var uniqueMatches = [];
+  for (var i = 0; i < matches.length; i++) {
+    var key = matches[i].code + '|' + matches[i].desc.substring(0, 30);
+    if (!seen[key]) {
+      seen[key] = true;
+      uniqueMatches.push(matches[i]);
+    }
+  }
+
+  var displayMatches = uniqueMatches.slice(0, 50);
+
+  var html = '<div class="name-result-header">按「' + cnName + '」搜索，匹配到 <strong>' + displayMatches.length + '</strong> 条HS编码（关键词：' + keywords.join('、') + '）：</div>';
+
+  for (var i = 0; i < displayMatches.length; i++) {
+    var m = displayMatches[i];
+    var isZero = Math.abs(m.rate_pct) === 0 || m.rate === '(無税)';
+    html += '<div class="hs-option' + (isZero ? ' rate-zero' : '') + '" onclick="pickHsFromName(' + i + ')" id="name-opt-' + i + '" style="margin-bottom:6px">';
+    html += '<div class="hs-option-code">' + m.code + '</div>';
+    html += '<div class="hs-option-desc">' + m.desc.substring(0, 80) + (m.desc.length > 80 ? '...' : '') + '</div>';
+    var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
+    html += '<span class="hs-option-rate">税率：' + rateDisplay + '</span>';
+    html += '</div>';
+  }
+
+  if (uniqueMatches.length > 50) {
+    html += '<div class="name-no-match">（还有 ' + (uniqueMatches.length - 50) + ' 条结果，已截断显示前50条，请使用更精确的品名）</div>';
+  }
+
+  resultsEl.innerHTML = html;
+  resultsEl.classList.add('show');
+  window._nameMatches = displayMatches;
+}
+
+// 从品名搜索结果中选择HS编码
+function pickHsFromName(idx) {
+  var m = window._nameMatches[idx];
+  selectedHs = m;
+
+  // 更新HS编码输入框
+  document.getElementById('hs-code').value = m.code;
+
+  // 清空品名搜索结果
+  document.getElementById('name-results').classList.remove('show');
+  document.getElementById('name-results').innerHTML = '';
+  document.getElementById('product-name-search').value = '';
+
+  // 显示选中状态
+  document.getElementById('hs-selected-text').textContent = m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + formatRateDisplay(m.rate_pct, m.rate) + '）';
+  document.getElementById('hs-selected').classList.add('show');
+}
+
+function loadHsData() {
+  fetch('hs_data.json')
+    .then(function(r) { return r.json(); })
+    .then(function(data) { hsData = data; })
+    .catch(function(e) { console.error('Failed to load HS data:', e); });
+}
+loadHsData();
+
+function selectMode(idx) {
+  currentMode = idx;
+  for (var i = 0; i < 3; i++) {
+    var el = document.getElementById('mode-' + i);
+    if (i === idx) el.classList.add('active');
+    else el.classList.remove('active');
+  }
+}
+
+function searchHs() {
+  var q = document.getElementById('hs-code').value.trim();
+  var resultsEl = document.getElementById('hs-results');
+
+  if (!q) {
+    resultsEl.classList.remove('show');
+    resultsEl.innerHTML = '';
+    return;
+  }
+
+  if (Object.keys(hsData).length === 0) {
+    resultsEl.classList.add('show');
+    resultsEl.innerHTML = '<div class="alert-box alert-red">HS编码数据正在加载中，请稍后重试。</div>';
+    return;
+  }
+
+  var matches = [];
+  var keys = Object.keys(hsData);
+  for (var i = 0; i < keys.length; i++) {
+    var code = keys[i];
+    if (code.indexOf(q) >= 0) {
+      var items = hsData[code];
+      for (var j = 0; j < items.length; j++) {
+        matches.push({ code: code, desc: items[j].desc, rate: items[j].rate, rate_pct: items[j].rate_pct, rate_label: items[j].rate_label });
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    resultsEl.classList.add('show');
+    resultsEl.innerHTML = '<div style="text-align:center;color:#a0aec0;font-size:0.88rem;padding:16px">未找到HS编码 "' + q + '" 的匹配结果</div>';
+    return;
+  }
+
+  var html = '<div class="hs-results-header"><span>找到 ' + matches.length + ' 条匹配结果，请选择对应项：</span></div>';
+
+  for (var i = 0; i < matches.length; i++) {
+    var m = matches[i];
+    var isZero = m.rate_pct === 0 || m.rate === '(無税)';
+    html += '<div class="hs-option' + (isZero ? ' rate-zero' : '') + '" onclick="pickHs(' + i + ')" id="hs-opt-' + i + '">';
+    html += '<div class="hs-option-code">' + m.code + '</div>';
+    html += '<div class="hs-option-desc">' + m.desc + '</div>';
+    var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
+    html += '<span class="hs-option-rate">税率：' + rateDisplay + '</span>';
+    html += '</div>';
+  }
+
+  resultsEl.innerHTML = html;
+  resultsEl.classList.add('show');
+
+  window._hsMatches = matches;
+}
+
+function pickHs(idx) {
+  var m = window._hsMatches[idx];
+  selectedHs = m;
+
+  var allOpts = document.querySelectorAll('.hs-option');
+  for (var i = 0; i < allOpts.length; i++) {
+    allOpts[i].classList.remove('selected');
+  }
+  document.getElementById('hs-opt-' + idx).classList.add('selected');
+
+  var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
+  document.getElementById('hs-selected-text').textContent = m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + rateDisplay + '）';
+  document.getElementById('hs-selected').classList.add('show');
+}
+
+function clearHsSelection() {
+  selectedHs = null;
+  document.getElementById('hs-selected').classList.remove('show');
+  var allOpts = document.querySelectorAll('.hs-option');
+  for (var i = 0; i < allOpts.length; i++) {
+    allOpts[i].classList.remove('selected');
+  }
+}
+
+function addBox() {
+  var length = parseFloat(document.getElementById('box-length').value) || 0;
+  var width = parseFloat(document.getElementById('box-width').value) || 0;
+  var height = parseFloat(document.getElementById('box-height').value) || 0;
+  var qty = parseInt(document.getElementById('box-qty').value) || 0;
+
+  if (length <= 0 || width <= 0 || height <= 0) { alert('请填写完整的长、宽、高尺寸'); return; }
+  if (qty <= 0) { alert('请填写箱数'); return; }
+
+  boxes.push({ length: length, width: width, height: height, qty: qty });
+  renderBoxList();
+  clearBoxForm();
+}
+
+function removeBox(index) {
+  boxes.splice(index, 1);
+  renderBoxList();
+}
+
+function renderBoxList() {
+  var el = document.getElementById('box-list');
+  if (boxes.length === 0) {
+    el.innerHTML = '<div class="box-empty">暂无箱子，点击上方按钮添加（可选）</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < boxes.length; i++) {
+    var b = boxes[i];
+    var sum = b.length + b.width + b.height;
+    var sumColor = sum > 260 ? '#e53e3e' : '#38a169';
+    html += '<div class="box-item">';
+    html += '<div class="box-item-index">' + (i + 1) + '</div>';
+    html += '<div class="box-item-info">';
+    html += '<span>' + b.length + 'x' + b.width + 'x' + b.height + 'cm</span>';
+    html += '<span>三边和 <strong style="color:' + sumColor + '">' + sum + 'cm</strong></span>';
+    html += '<span><strong>' + b.qty + '</strong> 箱</span>';
+    html += '</div>';
+    html += '<button class="box-item-del" onclick="removeBox(' + i + ')" title="删除">X</button>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function clearBoxForm() {
+  document.getElementById('box-length').value = '';
+  document.getElementById('box-width').value = '';
+  document.getElementById('box-height').value = '';
+  document.getElementById('box-qty').value = '1';
+}
+
+function formatRateDisplay(ratePct, rawRate) {
+  if (ratePct === null || ratePct === undefined) return rawRate;
+  var absRate = Math.abs(ratePct);
+  if (absRate === 0) return '0% (无税)';
+  return absRate.toFixed(1) + '%';
+}
+
+function formatMoney(val, currency) {
+  if (currency === 'JPY') return Math.round(val).toLocaleString() + ' JPY';
+  if (currency === 'USD') return '$' + val.toFixed(2) + ' USD';
+  return '\u00a5' + val.toFixed(2) + ' CNY';
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+function calc() {
+  var errors = [];
+  var totalWeight = parseFloat(document.getElementById('total-weight').value) || 0;
+  var cargoValue = parseFloat(document.getElementById('cargo-value').value) || 0;
+  var currency = document.getElementById('currency').value;
+  var mode = MODES[currentMode];
+
+  if (totalWeight <= 0) errors.push('请填写货物总重');
+  if (!selectedHs) errors.push('请查询并选择HS编码');
+
+  if (selectedHs && selectedHs.rate_pct === null) {
+    errors.push('所选择的HS编码税率格式特殊（' + selectedHs.rate + '），无法自动计算百分比税率，请确认');
+  }
+
+  for (var i = 0; i < boxes.length; i++) {
+    var b = boxes[i];
+    var sum = b.length + b.width + b.height;
+    if (sum > 260) errors.push('箱' + (i + 1) + ' 三边和 ' + sum + 'cm 超过260cm，无法运输');
+  }
+
+  var resultBox = document.getElementById('result-card');
+  var content = document.getElementById('result-content');
+
+  if (errors.length > 0) {
+    resultBox.classList.add('show');
+    var errHtml = '<div class="alert-box alert-red"><strong>无法计算，请修正以下问题：</strong><ul style="margin-top:8px;padding-left:18px">';
+    for (var i = 0; i < errors.length; i++) {
+      errHtml += '<li style="margin-bottom:4px">' + errors[i] + '</li>';
+    }
+    errHtml += '</ul></div>';
+    content.innerHTML = errHtml;
+    return;
+  }
+
+  var tariffRate = Math.abs(selectedHs.rate_pct);
+
+  // === 核心计算 ===
+  // 手续费 = 货值 x 3%
+  var serviceFee = cargoValue * 0.03;
+
+  // 关税 = 货值 x 实际税率
+  var customsDuty = cargoValue * (tariffRate / 100);
+
+  // 消费税 = (货值 + 关税) x 10%
+  var consumptionTax = (cargoValue + customsDuty) * 0.1;
+
+  // 税金 = 关税 + 消费税
+  var tax = customsDuty + consumptionTax;
+
+  // 转换为人民币（直接转换，不再中转）
+  var serviceFeeCNY, customsDutyCNY, consumptionTaxCNY;
+  if (currency === 'JPY') {
+    serviceFeeCNY = serviceFee / RATES.CNY;
+    customsDutyCNY = customsDuty / RATES.CNY;
+    consumptionTaxCNY = consumptionTax / RATES.CNY;
+  } else if (currency === 'USD') {
+    serviceFeeCNY = serviceFee * RATES.CNY;
+    customsDutyCNY = customsDuty * RATES.CNY;
+    consumptionTaxCNY = consumptionTax * RATES.CNY;
+  } else {
+    // CNY 不转换
+    serviceFeeCNY = serviceFee;
+    customsDutyCNY = customsDuty;
+    consumptionTaxCNY = consumptionTax;
+  }
+
+  var taxCNY = customsDutyCNY + consumptionTaxCNY;
+
+  var feeSumCNY = serviceFeeCNY + taxCNY;
+  var costPerKg = feeSumCNY / totalWeight + mode.rate;
+
+  resultBox.classList.add('show');
+  var html = '';
+
+  html += '<div class="alert-box alert-green">' + mode.name + ' 报价计算完成</div>';
+
+  html += '<div class="total-box">';
+  html += '<div class="total-label">每KG成本</div>';
+  html += '<div class="total-value">\u00a5 ' + costPerKg.toFixed(2) + ' CNY/kg</div>';
+  html += '</div>';
+
+  html += '<table class="fee-table">';
+  html += '<tr><th>项目</th><th>明细</th></tr>';
+  html += '<tr><td>发货方式</td><td>' + mode.name + '</td></tr>';
+  html += '<tr><td>HS编码</td><td>' + selectedHs.code + '</td></tr>';
+  html += '<tr><td>HS编码税率</td><td>' + formatRateDisplay(selectedHs.rate_pct, selectedHs.rate) + '</td></tr>';
+  html += '<tr><td>总货值</td><td>' + formatMoney(cargoValue, currency) + '</td></tr>';
+
+  if (boxes.length > 0) {
+    for (var i = 0; i < boxes.length; i++) {
+      var b = boxes[i];
+      var sum = b.length + b.width + b.height;
+      html += '<tr><td>箱' + (i + 1) + '</td><td>' + b.length + 'x' + b.width + 'x' + b.height + 'cm x ' + b.qty + '箱（三边和 ' + sum + 'cm）</td></tr>';
+    }
+  }
+
+  html += '<tr><td>货物总重</td><td>' + totalWeight.toFixed(2) + ' kg</td></tr>';
+  html += '<tr><td>手续费（货值x3%）</td><td>' + formatMoney(serviceFee, currency) + ' = \u00a5' + serviceFeeCNY.toFixed(2) + ' CNY</td></tr>';
+  html += '<tr><td>关税（货值x' + tariffRate + '%）</td><td>' + formatMoney(customsDuty, currency) + ' = \u00a5' + customsDutyCNY.toFixed(2) + ' CNY</td></tr>';
+  html += '<tr><td>消费税（(货值+关税)x10%）</td><td>' + formatMoney(consumptionTax, currency) + ' = \u00a5' + consumptionTaxCNY.toFixed(2) + ' CNY</td></tr>';
+  html += '<tr><td>税金合计（关税+消费税）</td><td>' + formatMoney(tax, currency) + ' = \u00a5' + taxCNY.toFixed(2) + ' CNY</td></tr>';
+  html += '<tr><td>手续费+税金（CNY）</td><td>\u00a5' + feeSumCNY.toFixed(2) + ' CNY</td></tr>';
+  html += '<tr><td>均摊到每kg</td><td>\u00a5' + (feeSumCNY / totalWeight).toFixed(2) + '/kg</td></tr>';
+  html += '<tr><td><strong>每kg成本</strong></td><td><strong>\u00a5' + costPerKg.toFixed(2) + ' CNY/kg</strong></td></tr>';
+  html += '</table>';
+
+  html += '<div class="formula-box">';
+  html += '<strong>计算公式：</strong><br>';
+  html += '手续费 = ' + formatMoney(cargoValue, currency) + ' \u00d7 3% = ' + formatMoney(serviceFee, currency) + '<br>';
+  html += '关税 = ' + formatMoney(cargoValue, currency) + ' \u00d7 ' + tariffRate + '% = ' + formatMoney(customsDuty, currency) + '<br>';
+  html += '消费税 = (' + formatMoney(cargoValue, currency) + ' + ' + formatMoney(customsDuty, currency) + ') \u00d7 10% = ' + formatMoney(consumptionTax, currency) + '<br>';
+  html += '税金 = ' + formatMoney(customsDuty, currency) + ' + ' + formatMoney(consumptionTax, currency) + ' = ' + formatMoney(tax, currency) + '<br>';
+  html += '手续费(CNY) = \u00a5' + serviceFeeCNY.toFixed(2) + ' | 税金(CNY) = \u00a5' + taxCNY.toFixed(2) + '<br>';
+  html += '每kg成本 = (\u00a5' + serviceFeeCNY.toFixed(2) + ' + \u00a5' + taxCNY.toFixed(2) + ') / ' + totalWeight.toFixed(2) + 'kg + \u00a5' + mode.rate + ' = \u00a5' + costPerKg.toFixed(2) + '/kg';
+  html += '</div>';
+
+  content.innerHTML = html;
+}
+
+function resetForm() {
+  boxes = [];
+  renderBoxList();
+  clearBoxForm();
+  clearHsSelection();
+  document.getElementById('hs-code').value = '';
+  document.getElementById('hs-results').classList.remove('show');
+  document.getElementById('hs-results').innerHTML = '';
+  document.getElementById('total-weight').value = '';
+  document.getElementById('cargo-value').value = '';
+  document.getElementById('currency').value = 'JPY';
+  document.getElementById('result-card').classList.remove('show');
+  selectMode(0);
+}
+
+document.getElementById('hs-code').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); searchHs(); }
+});
+
+document.getElementById('product-name-search').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); searchByProductName(); }
+});
+</script>
+</body>
+</html>
