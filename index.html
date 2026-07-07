@@ -88,18 +88,6 @@ input[type="number"]{-moz-appearance:textfield}
 
 .footer{text-align:center;padding:20px;color:#a0aec0;font-size:0.78rem}
 
-/* 品名搜索 */
-.name-search-section{margin-top:10px}
-.name-search-row{display:flex;gap:8px;align-items:flex-end}
-.name-search-row .form-group{margin-bottom:0;flex:1}
-.name-hint{font-size:0.78rem;color:#a0aec0;margin-top:4px;line-height:1.5}
-.field-hint{font-size:0.75rem;color:#a0aec0;font-weight:normal;margin-left:6px}
-.name-results{margin-top:10px;display:none}
-.name-results.show{display:block}
-.name-result-header{font-size:0.82rem;color:#718096;margin-bottom:8px}
-.name-no-match{text-align:center;color:#a0aec0;font-size:0.88rem;padding:12px}
-.name-section-title{font-size:0.78rem;color:#4299e1;font-weight:600;margin-bottom:6px;padding-top:6px;border-top:1px dashed #bee3f8}
-
 </style></head>
 <body>
 <div class="container">
@@ -151,18 +139,6 @@ input[type="number"]{-moz-appearance:textfield}
     <div class="form-group" style="margin-top:10px">
       <label>实际税率（%）<span class="field-hint">选填。填写后优先使用此税率计算，忽略HS编码税率</span></label>
       <input type="number" id="custom-tariff-rate" placeholder="如：5、10、15" min="0" max="100" step="0.1" />
-    </div>
-
-    <div class="name-search-section">
-      <div class="name-search-row">
-        <div class="form-group">
-          <label>按品名搜索HS编码</label>
-          <input type="text" id="product-name-search" placeholder="输入中文品名，如：牛肉、马肉、鸡肉、猪肉" />
-        </div>
-        <button class="btn btn-search btn-sm" onclick="searchByProductName()">查询</button>
-      </div>
-      <div class="name-hint">输入中文品名，自动匹配HS编码及税率（支持多个匹配结果）</div>
-      <div class="name-results" id="name-results"></div>
     </div>
 
     <div class="form-row">
@@ -247,194 +223,6 @@ var hsData = {};
 var selectedHs = null;
 
 var boxes = [];
-
-// 中文品名 → 日语关键词 对照表
-var CN_JP_DICT = [
-  // === 活动物 01类 ===
-  { cn: ['马', '赛马', '活马', '纯种马', '阿拉伯马'], jp: ['馬', '軽種馬', 'サラブレッド', 'アラブ', 'アングロアラブ'] },
-  { cn: ['驴'], jp: ['ろ馬'] },
-  { cn: ['骡', '驴骡'], jp: ['ら馬'] },
-  { cn: ['牛', '肉牛', '活牛', '育成牛', '架子牛'], jp: ['牛', '骨付き', '骨付きでない'] },
-  { cn: ['奶牛', '乳牛'], jp: ['乳用', '泌乳'] },
-  { cn: ['种牛', '繁殖用牛', '纯种牛'], jp: ['純粋種', '繁殖用'] },
-  { cn: ['猪', '活猪', '肉猪'], jp: ['豚'] },
-  { cn: ['羊', '绵羊'], jp: ['羊'] },
-  { cn: ['山羊'], jp: ['山羊', 'やぎ'] },
-  { cn: ['鸡', '活鸡', '肉鸡', '蛋鸡', '雏鸡'], jp: ['鶏', 'ガルルス'] },
-  { cn: ['鸭'], jp: ['あひる'] },
-  { cn: ['鹅'], jp: ['ちょう'] },
-  { cn: ['火鸡'], jp: ['七面鳥'] },
-  { cn: ['鹌鹑'], jp: ['ほろほろ鳥'] },
-  { cn: ['兔', '兔子'], jp: ['うさぎ'] },
-  { cn: ['蜜蜂', '蜂群'], jp: ['蜂'] },
-  { cn: ['爬虫类', '蜥蜴', '蛇'], jp: ['爬虫類'] },
-  { cn: ['鲸鱼', '鲸'], jp: ['くじら'] },
-  { cn: ['灵长类', '猴', '猩猩'], jp: ['霊長類'] },
-  // === 鲜冷肉 0201-0206 ===
-  { cn: ['牛肉', '牛排', '牛腩', '绞牛肉', '生牛肉', '冷牛肉'], jp: ['牛肉', '牛の肉', '枝肉', '半丸枝肉'] },
-  { cn: ['马肉', '鲜马肉', '冷藏马肉'], jp: ['馬肉', '馬の肉', '馬'] },
-  { cn: ['猪肉', '冷猪肉', '冷藏猪肉'], jp: ['豚の肉', 'いのしし'] },
-  { cn: ['羊肉', '冷羊肉', '羔羊肉'], jp: ['羊の肉', '子羊'] },
-  { cn: ['山羊肉'], jp: ['山羊', 'やぎ'] },
-  { cn: ['鸡肉', '冷鸡肉', '生鸡肉'], jp: ['鶏肉', 'ガルルス'] },
-  { cn: ['鸭肉'], jp: ['あひる'] },
-  { cn: ['鹅肉'], jp: ['ちょう'] },
-  { cn: ['火鸡肉'], jp: ['七面鳥'] },
-  { cn: ['兔肉'], jp: ['うさぎ'] },
-  // === 冷冻肉 0207-0210 ===
-  { cn: ['冻牛肉', '冷冻牛肉'], jp: ['牛肉', '牛の肉', '冷凍'] },
-  { cn: ['冻马肉', '冷冻马肉'], jp: ['馬肉', '馬', '冷凍'] },
-  { cn: ['冻猪肉', '冷冻猪肉'], jp: ['豚の肉', '冷凍'] },
-  { cn: ['冻鸡肉', '冷冻鸡肉'], jp: ['鶏肉', 'ガルルス', '冷凍'] },
-  { cn: ['冻鸭肉', '冷冻鸭肉'], jp: ['あひる', '冷凍'] },
-  // === 内脏 0206-0208 ===
-  { cn: ['牛肝', '牛肝脏', '肝脏', '肝'], jp: ['肝脏', '肝'] },
-  { cn: ['牛舌', '牛舌头'], jp: ['舌'] },
-  { cn: ['牛心', '牛心脏', '心脏'], jp: ['心臓'] },
-  { cn: ['猪肝', '猪肝脏'], jp: ['豚', '肝脏', '肝'] },
-  { cn: ['猪心', '猪心脏'], jp: ['豚', '心臓'] },
-  { cn: ['猪舌', '猪舌头'], jp: ['豚', '舌'] },
-  { cn: ['鸡肝', '鸡内脏'], jp: ['鶏', '内脏'] },
-  { cn: ['牛头肉', '牛脸颊'], jp: ['ほほ肉', '頭肉'] },
-  { cn: ['牛心', '牛肺', '牛胃', '牛肾'], jp: ['臓器'] },
-  { cn: ['猪头肉', '猪脸颊'], jp: ['豚', 'ほほ肉', '頭肉'] },
-  // === 肉制品 0210 ===
-  { cn: ['肉干', '牛肉干', '马肉干'], jp: ['乾燥', 'くん製'] },
-  { cn: ['香肠', '腊肠', '灌肠'], jp: ['ソーセージ', 'サラミ'] },
-  { cn: ['肉罐头', '罐头肉'], jp: ['缶詰'] },
-  { cn: ['培根', '腌肉'], jp: ['塩蔵', 'くん製'] },
-  { cn: ['火腿', '猪腿', '猪前腿', '猪后腿'], jp: ['ハム'] },
-  // === 皮革 ===
-  { cn: ['牛皮', '牛皮革'], jp: ['牛皮', '牛革'] },
-  { cn: ['马皮', '马皮革'], jp: ['馬皮', '馬革'] },
-  // === 通用 ===
-  { cn: ['骨', '骨头'], jp: ['骨'] },
-  { cn: ['脂肪', '油脂', '牛脂', '猪油'], jp: ['脂肪', '脂'] },
-  { cn: ['血', '血液'], jp: ['血'] },
-];
-
-// 中文品名 → 日语关键词搜索
-function getJapaneseKeywords(cnName) {
-  if (!cnName) return [];
-  var results = [];
-  for (var i = 0; i < CN_JP_DICT.length; i++) {
-    var entry = CN_JP_DICT[i];
-    for (var j = 0; j < entry.cn.length; j++) {
-      if (cnName.indexOf(entry.cn[j]) >= 0) {
-        for (var k = 0; k < entry.jp.length; k++) {
-          if (results.indexOf(entry.jp[k]) < 0) results.push(entry.jp[k]);
-        }
-        break;
-      }
-    }
-  }
-  return results;
-}
-
-// 按品名搜索HS编码
-function searchByProductName() {
-  var cnName = document.getElementById('product-name-search').value.trim();
-  var resultsEl = document.getElementById('name-results');
-
-  if (!cnName) {
-    resultsEl.classList.remove('show');
-    resultsEl.innerHTML = '';
-    return;
-  }
-
-  if (Object.keys(hsData).length === 0) {
-    resultsEl.classList.add('show');
-    resultsEl.innerHTML = '<div class="alert-box alert-red">HS编码数据正在加载中，请稍后重试。</div>';
-    return;
-  }
-
-  var keywords = getJapaneseKeywords(cnName);
-
-  if (keywords.length === 0) {
-    resultsEl.classList.add('show');
-    resultsEl.innerHTML = '<div class="name-no-match">未找到与「' + cnName + '」相关的HS编码关键词，请尝试其他品名，或直接使用HS编码查询。</div>';
-    return;
-  }
-
-  // 搜索HS数据库
-  var matches = [];
-  var keys = Object.keys(hsData);
-  for (var i = 0; i < keys.length; i++) {
-    var code = keys[i];
-    var items = hsData[code];
-    for (var j = 0; j < items.length; j++) {
-      var desc = items[j].desc;
-      var found = false;
-      for (var k = 0; k < keywords.length; k++) {
-        if (desc.indexOf(keywords[k]) >= 0) {
-          found = true;
-          break;
-        }
-      }
-      if (found) {
-        matches.push({ code: code, desc: items[j].desc, rate: items[j].rate, rate_pct: items[j].rate_pct });
-      }
-    }
-  }
-
-  if (matches.length === 0) {
-    resultsEl.classList.add('show');
-    resultsEl.innerHTML = '<div class="name-no-match">关键词「' + keywords.join('、') + '」未匹配到HS编码，请尝试其他品名。</div>';
-    return;
-  }
-
-  // 按HS编码+描述去重
-  var seen = {};
-  var uniqueMatches = [];
-  for (var i = 0; i < matches.length; i++) {
-    var key = matches[i].code + '|' + matches[i].desc.substring(0, 30);
-    if (!seen[key]) {
-      seen[key] = true;
-      uniqueMatches.push(matches[i]);
-    }
-  }
-
-  var displayMatches = uniqueMatches.slice(0, 50);
-
-  var html = '<div class="name-result-header">按「' + cnName + '」搜索，匹配到 <strong>' + displayMatches.length + '</strong> 条HS编码（关键词：' + keywords.join('、') + '）：</div>';
-
-  for (var i = 0; i < displayMatches.length; i++) {
-    var m = displayMatches[i];
-    var isZero = Math.abs(m.rate_pct) === 0 || m.rate === '(無税)';
-    html += '<div class="hs-option' + (isZero ? ' rate-zero' : '') + '" onclick="pickHsFromName(' + i + ')" id="name-opt-' + i + '" style="margin-bottom:6px">';
-    html += '<div class="hs-option-code">' + m.code + '</div>';
-    html += '<div class="hs-option-desc">' + m.desc.substring(0, 80) + (m.desc.length > 80 ? '...' : '') + '</div>';
-    var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
-    html += '<span class="hs-option-rate">税率：' + rateDisplay + '</span>';
-    html += '</div>';
-  }
-
-  if (uniqueMatches.length > 50) {
-    html += '<div class="name-no-match">（还有 ' + (uniqueMatches.length - 50) + ' 条结果，已截断显示前50条，请使用更精确的品名）</div>';
-  }
-
-  resultsEl.innerHTML = html;
-  resultsEl.classList.add('show');
-  window._nameMatches = displayMatches;
-}
-
-// 从品名搜索结果中选择HS编码
-function pickHsFromName(idx) {
-  var m = window._nameMatches[idx];
-  selectedHs = m;
-
-  // 更新HS编码输入框
-  document.getElementById('hs-code').value = m.code;
-
-  // 清空品名搜索结果
-  document.getElementById('name-results').classList.remove('show');
-  document.getElementById('name-results').innerHTML = '';
-  document.getElementById('product-name-search').value = '';
-
-  // 显示选中状态
-  document.getElementById('hs-selected-text').textContent = m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + formatRateDisplay(m.rate_pct, m.rate) + '）';
-  document.getElementById('hs-selected').classList.add('show');
-}
 
 function loadHsData() {
   fetch('hs_data.json')
@@ -722,19 +510,6 @@ document.getElementById('hs-code').addEventListener('input', function() {
 });
 document.getElementById('hs-code').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); searchHs(); }
-});
-
-// 品名搜索自动触发（输入时自动查询，带300ms防抖）
-var nameSearchTimer = null;
-document.getElementById('product-name-search').addEventListener('input', function() {
-  var self = this;
-  clearTimeout(nameSearchTimer);
-  nameSearchTimer = setTimeout(function() {
-    searchByProductName();
-  }, 300);
-});
-document.getElementById('product-name-search').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); searchByProductName(); }
 });
 </script>
 </body>
