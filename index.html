@@ -207,6 +207,24 @@ input[type="number"]{-moz-appearance:textfield}
 <div class="footer">中日贸易包税报价工具 - v2.4</div>
 
 <script>
+
+// === 运行时解码（商业敏感值已混淆）===
+var _k = 90;
+function d(s) {
+  var x = '';
+  var b = Buffer.from(s, 'base64').toString('binary');
+  for (var i = 0; i < b.length; i++) x += String.fromCharCode(b.charCodeAt(i) ^ _k);
+  return JSON.parse(Buffer.from(x, 'base64').toString('utf8'));
+}
+var CNY_TO_JPY    = d('FzAXLxUeOW8UG2dn');
+var USD_TO_CNY    = d('FDNuaRUOF2oUID0jFDAbbhQwMWsUMA9n');
+var SERVICE_FEE_RATE = d('FxluLRctZ2c=');
+var CONSUMPTION_TAX  = d('FxluLRQgPWc=');
+var LOCAL_TAX_RATIO  = d('FxluIxUeEy0UDh8jFR4TLRQOHyMVHhMtFAtnZw==');
+var MODE_RATES       = d('DSA5KRcOEy8UCS0iFDZqZw==');
+var COST_RATES       = d('DSADKRcOGykXDhcvFAxqZw==');
+var OVERSIZE_RATES   = d('DSAbLxQJLSIWMA8pFzNuawILZ2c=');
+
 var MODES = [
   { name: '海运货物', rate: 7 },
   { name: '空运普货', rate: 12.5 },
@@ -392,9 +410,7 @@ function calc() {
   var mode = MODES[currentMode];
 
   // === 货值币种统一转换为日元（计算前必须先统一币种）===
-  // 汇率：1 CNY = 23.8794 JPY；1 USD = 6.793 CNY = 6.793×23.8794 ≈ 162.22 JPY
-  var CNY_TO_JPY = 23.8794;
-  var USD_TO_CNY = 1 / 0.1472;
+  // 汇率已通过 d() 全局注入（见顶部混淆保护块）
   if (currency === 'CNY') {
     cargoValue = cargoValue * CNY_TO_JPY; // CNY → JPY
   } else if (currency === 'USD') {
@@ -435,16 +451,16 @@ function calc() {
 
   // === 核心计算（参考 Excel 税金逻辑）===
   // 手续费 = 货值 x 3%
-  var serviceFee = cargoValue * 0.03;
+  var serviceFee = cargoValue * SERVICE_FEE_RATE;
 
   // 关税 = 货值 x 实际税率
   var customsDuty = cargoValue * (tariffRate / 100);
 
   // 消费税 = (货值 + 关税) x 7.8%（日本消费税率）
-  var consumptionTax = (cargoValue + customsDuty) * 0.078;
+  var consumptionTax = (cargoValue + customsDuty) * CONSUMPTION_TAX;
 
   // 地方消费税 = 消费税 x 22/78
-  var localTax = consumptionTax * (22 / 78);
+  var localTax = consumptionTax * LOCAL_TAX_RATIO;
 
   // 税金合计 = 关税 + 消费税 + 地方消费税
   var tax = customsDuty + consumptionTax + localTax;
@@ -463,7 +479,7 @@ function calc() {
 
   var feeSumCNY = serviceFeeCNY + taxCNY;
   var isCostMode = document.getElementById('cost-mode-cb').checked;
-  var costRates = [6, 10, 13.5];
+  var costRates = COST_RATES;
   var shippingRate = isCostMode ? costRates[currentMode] : mode.rate;
   var costPerKg = feeSumCNY / totalWeight + shippingRate;
 
@@ -508,5 +524,21 @@ document.getElementById('hs-code').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); searchHs(); }
 });
 </script>
+
+// === 防复制保护 ===
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && (e.key === 'u' || e.key === 'U')) e.preventDefault();
+  if (e.key === 'F12') e.preventDefault();
+});
+// 防开发者工具检测（简单版）
+(function() {
+  var _w = window.innerWidth, _h = window.innerHeight;
+  setInterval(function() {
+    if (window.innerWidth !== _w || window.innerHeight !== _h) {
+      document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:24px;color:#999">请使用正常浏览器访问</p>';
+    }
+  }, 1000);
+})();
 </body>
 </html>
