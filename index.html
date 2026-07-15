@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -105,11 +105,8 @@ input[type="number"]{-moz-appearance:textfield}
 .product-row-del{background:none;border:none;color:#fc8181;font-size:0.85rem;
   cursor:pointer;padding:2px 8px;border-radius:4px}
 .product-row-del:hover{background:#fff5f5;color:#e53e3e}
-.product-cost-line{display:flex;align-items:center;justify-content:space-between;
-  background:#ebf8ff;border:1px solid #bee3f8;border-radius:6px;padding:8px 12px;
-  margin-top:10px;font-size:0.82rem}
 .product-cost-label{color:#2b6cb2}
-.product-cost-value{font-weight:bold;color:#2b6cb0}
+
 .total-blended-card{background:linear-gradient(135deg,#e53e3e,#c53030);
   border-radius:12px;padding:22px;text-align:center;margin-top:14px}
 .total-blended-label{color:rgba(255,255,255,0.85);font-size:0.9rem}
@@ -246,20 +243,20 @@ input[type="number"]{-moz-appearance:textfield}
 
 
 <script type="text/template" id="product-row-template">
-  <div class="product-row" id="product-row-{INDEX}">
+  <div class="product-row" id="product-row-{PRD_ID}">
     <div class="product-row-header">
-      <span class="product-row-title">产品 {INDEX}</span>
-      <button class="product-row-del" onclick="removeProduct({INDEX})" id="del-btn-{INDEX}" style="display:none">删除此产品</button>
+      <span class="product-row-title">产品 {PRD_ID}</span>
+      <button class="product-row-del" onclick="removeProduct({PRD_ID})" id="del-btn-{PRD_ID}" style="display:none">删除此产品</button>
     </div>
     <div class="product-fields">
       <div class="form-row">
         <div class="form-group" style="min-width:100px">
           <label>货值</label>
-          <input type="number" id="cargo-value-{INDEX}" placeholder="货值" min="0" step="0.01" oninput="updateProductCost({INDEX})" />
+          <input type="number" id="cargo-value-{PRD_ID}" placeholder="货值" min="0" step="0.01" />
         </div>
         <div class="form-group" style="min-width:100px">
           <label>币种</label>
-          <select id="currency-{INDEX}" onchange="updateProductCost({INDEX})">
+          <select id="currency-{PRD_ID}" >
             <option value="JPY">日元 (JPY)</option>
             <option value="USD">美元 (USD)</option>
             <option value="CNY">人民币 (CNY)</option>
@@ -267,29 +264,25 @@ input[type="number"]{-moz-appearance:textfield}
         </div>
         <div class="form-group" style="min-width:80px">
           <label>实际税率 (%)</label>
-          <input type="number" id="custom-tariff-{INDEX}" placeholder="选填" min="0" max="100" step="0.1" oninput="updateProductCost({INDEX})" />
+          <input type="number" id="custom-tariff-{PRD_ID}" placeholder="选填" min="0" max="100" step="0.1" />
         </div>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>HS 编码查询</label>
         <div class="hs-search-row">
           <div class="form-group" style="margin-bottom:0;flex:1">
-            <input type="text" id="hs-code-{INDEX}" placeholder="输入HS编码，如 6109" maxlength="10"
-              oninput="hsSearchDebounce({INDEX})" onkeydown="if(event.key==='Enter'){event.preventDefault();hsSearchById({INDEX})}" />
+            <input type="text" id="hs-code-{PRD_ID}" placeholder="输入HS编码，如 6109" maxlength="10"
+              oninput="hsSearchDebounce({PRD_ID})" onkeydown="if(event.key==='Enter'){event.preventDefault();hsSearchById({PRD_ID})}" />
           </div>
-          <button class="btn btn-search btn-sm" onclick="hsSearchById({INDEX})">查询</button>
+          <button class="btn btn-search btn-sm" onclick="hsSearchById({PRD_ID})">查询</button>
         </div>
-        <div class="hs-selected-info" id="hs-selected-{INDEX}">
-          已选择：<strong id="hs-selected-text-{INDEX}"></strong>
-          <button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelectionById({INDEX})">清除</button>
+        <div class="hs-selected-info" id="hs-selected-{PRD_ID}">
+          已选择：<strong id="hs-selected-text-{PRD_ID}"></strong>
+          <button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelectionById({PRD_ID})">清除</button>
         </div>
-        <div class="hs-results" id="hs-results-{INDEX}"></div>
+        <div class="hs-results" id="hs-results-{PRD_ID}"></div>
       </div>
-      <div class="product-cost-line" id="product-cost-line-{INDEX}" style="display:none">
-        <span class="product-cost-label">产品 {INDEX} 每 KG 成本参考</span>
-        <span class="product-cost-value" id="product-cost-value-{INDEX}">--</span>
       </div>
-    </div>
   </div>
 </script>
 
@@ -408,14 +401,12 @@ function pickHsById(productId, idx) {
     m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + formatRateDisplay(m.rate_pct, m.rate) + '）';
   document.getElementById('hs-selected-' + productId).classList.add('show');
   document.getElementById('hs-results-' + productId).classList.remove('show');
-  updateProductCost(productId);
 }
 
 function clearHsSelectionById(productId) {
   var p = products.find(function(x) { return x.id === productId; });
   if (p) p.hs = null;
   document.getElementById('hs-selected-' + productId).classList.remove('show');
-  updateProductCost(productId);
 }
 
 function searchHs() { hsSearchById(1); }
@@ -544,9 +535,7 @@ function renderProductList() {
     }
     html += '<div class="hs-results" id="hs-results-' + p.id + '"></div>';
     html += '</div>';
-    html += '<div class="product-cost-line" id="product-cost-line-' + p.id + '">';
-    html += '<span class="product-cost-label">每 KG 成本参考</span>';
-    html += '<span class="product-cost-value" id="product-cost-value-' + p.id + '">--</span></div>';
+    html += '';
     html += '</div></div></div>';
   }
   listEl.innerHTML = html;
@@ -557,47 +546,10 @@ function onProductFieldChange(productId) {
   if (!p) return;
   p.cargoValue = parseFloat(document.getElementById('cargo-value-' + productId).value) || 0;
   p.currency = document.getElementById('currency-' + productId).value;
-  p.customTariffRate = document.getElementById('custom-tariff-' + productId).value.trim() !== '' ? parseFloat(document.getElementById('custom-tariff-' + productId).value) : null;
-  updateProductCost(productId);
+  var customInput = document.getElementById('custom-tariff-' + productId).value.trim();
+  p.customTariffRate = customInput !== '' ? parseFloat(customInput) : null;
 }
 
-function updateProductCost(productId) {
-  var p = products.find(function(x) { return x.id === productId; });
-  if (!p) return;
-  var cargoValue = parseFloat(document.getElementById('cargo-value-' + productId).value) || 0;
-  var currency = document.getElementById('currency-' + productId).value;
-  var customTariffRate = document.getElementById('custom-tariff-' + productId).value.trim() !== '' ? parseFloat(document.getElementById('custom-tariff-' + productId).value) : null;
-  var hs = p.hs;
-  var totalWeight = parseFloat(document.getElementById('total-weight').value) || 1;
-
-  var CNY_TO_JPY = 23.8794;
-  var USD_TO_CNY = 1 / 0.1472;
-  if (currency === 'CNY') cargoValue = cargoValue * CNY_TO_JPY;
-  else if (currency === 'USD') cargoValue = cargoValue * USD_TO_CNY * CNY_TO_JPY;
-
-  var lineEl = document.getElementById('product-cost-line-' + productId);
-  var valEl = document.getElementById('product-cost-value-' + productId);
-  if (!lineEl || !valEl) return;
-
-  var tariffRate = customTariffRate !== null ? Math.abs(customTariffRate) : (hs && hs.rate_pct !== null ? Math.abs(hs.rate_pct) : null);
-
-  if (cargoValue <= 0 || tariffRate === null) {
-    lineEl.style.display = 'none';
-    return;
-  }
-
-  var serviceFee = cargoValue * 0.03;
-  var customsDuty = cargoValue * (tariffRate / 100);
-  var consumptionTax = (cargoValue + customsDuty) * 0.078;
-  var localTax = consumptionTax * (22 / 78);
-  var taxCNY = (customsDuty + consumptionTax + localTax) / CNY_TO_JPY;
-  var serviceFeeCNY = serviceFee / CNY_TO_JPY;
-  var shippingRate = MODES[currentMode].rate;
-  var costPerKg = (serviceFeeCNY + taxCNY) / totalWeight + shippingRate;
-
-  lineEl.style.display = 'flex';
-  valEl.textContent = '¥ ' + costPerKg.toFixed(2) + ' CNY/kg';
-}
 
 function addProduct() {
   var newId = nextProductId++;
