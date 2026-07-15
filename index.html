@@ -88,6 +88,54 @@ input[type="number"]{-moz-appearance:textfield}
 
 .footer{text-align:center;padding:20px;color:#a0aec0;font-size:0.78rem}
 
+
+/* ---- 多产品区域 ---- */
+.products-card{border-left:3px solid #e53e3e}
+.products-header{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:#fff5f5;border-radius:10px 10px 0 0;
+  border-bottom:1px solid #fed7d7;margin:-24px -24px 0 -24px}
+.products-header-left{display:flex;align-items:center;gap:8px}
+.products-badge{background:#e53e3e;color:#fff;font-size:0.72rem;font-weight:bold;
+  padding:2px 8px;border-radius:10px;min-width:24px;text-align:center}
+.product-row{background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;
+  padding:16px;margin-top:12px;position:relative}
+.product-row-header{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:12px}
+.product-row-title{font-size:0.85rem;font-weight:bold;color:#e53e3e}
+.product-row-del{background:none;border:none;color:#fc8181;font-size:0.85rem;
+  cursor:pointer;padding:2px 8px;border-radius:4px}
+.product-row-del:hover{background:#fff5f5;color:#e53e3e}
+.product-cost-line{display:flex;align-items:center;justify-content:space-between;
+  background:#ebf8ff;border:1px solid #bee3f8;border-radius:6px;padding:8px 12px;
+  margin-top:10px;font-size:0.82rem}
+.product-cost-label{color:#2b6cb2}
+.product-cost-value{font-weight:bold;color:#2b6cb0}
+.total-blended-card{background:linear-gradient(135deg,#e53e3e,#c53030);
+  border-radius:12px;padding:22px;text-align:center;margin-top:14px}
+.total-blended-label{color:rgba(255,255,255,0.85);font-size:0.9rem}
+.total-blended-value{color:#fff;font-size:2.6rem;font-weight:bold;
+  margin-top:6px;letter-spacing:1px}
+.total-blended-unit{font-size:1rem;font-weight:normal;opacity:0.8}
+.total-blended-count{color:rgba(255,255,255,0.65);font-size:0.78rem;margin-top:4px}
+.product-add-btn{display:inline-flex;align-items:center;gap:6px;
+  background:#e53e3e;color:#fff;border:none;border-radius:8px;
+  padding:9px 18px;font-size:0.88rem;cursor:pointer;font-weight:600;
+  transition:background 0.2s;font-family:inherit}
+.product-add-btn:hover{background:#c53030}
+.product-add-btn:active{background:#9b2c2c}
+/* ---- 超尺寸附加费提示 ---- */
+.oversize-alert{display:none;flex-direction:column;gap:6px;margin-top:10px;
+  background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;
+  font-size:0.82rem}
+.oversize-alert.show{display:flex}
+.oversize-alert strong{color:#b7791f}
+.oversize-alert-row{display:flex;justify-content:space-between;color:#744210}
+.oversize-alert-ref{color:#b7791f;font-size:0.78rem;margin-top:2px}
+/* ---- 产品行内字段 ---- */
+.product-fields{display:flex;flex-direction:column;gap:0}
+.product-fields .form-row{display:flex;gap:10px;flex-wrap:wrap}
+.product-fields .form-row .form-group{flex:1;min-width:130px}
+
 </style></head>
 <body>
 <div class="container">
@@ -121,42 +169,27 @@ input[type="number"]{-moz-appearance:textfield}
   <div class="card">
     <h2>发货信息</h2>
 
-    <div class="form-group">
-      <label>HS编码查询 *</label>
-      <div class="hs-search-row">
-        <div class="form-group">
-          <input type="text" id="hs-code" placeholder="输入HS编码，如 6109" maxlength="10" />
+    <!-- 多产品区域 -->
+    <div class="products-card" id="products-section">
+      <div class="products-header">
+        <div class="products-header-left">
+          <span style="font-size:0.9rem;font-weight:bold;color:#e53e3e">产品列表</span>
+          <span class="products-badge" id="product-count">1</span>
         </div>
-        <button class="btn btn-search btn-sm" onclick="searchHs()">查询</button>
+        <button class="product-add-btn" onclick="addProduct()" title="添加一个产品">
+          <span style="font-size:1rem;line-height:1">+</span> 添加产品
+        </button>
       </div>
-      <div class="hs-selected-info" id="hs-selected">
-        已选择：<strong id="hs-selected-text"></strong>
-        <button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelection()">清除</button>
-      </div>
-      <div class="hs-results" id="hs-results"></div>
-    </div>
 
-    <div class="form-group" style="margin-top:10px">
-      <label>实际税率（%）<span class="field-hint">选填。填写后优先使用此税率计算，忽略HS编码税率</span></label>
-      <input type="number" id="custom-tariff-rate" placeholder="如：5、10、15" min="0" max="100" step="0.1" />
-    </div>
+      <!-- 产品行将动态插入到此处 -->
+      <div id="product-list"></div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label>货物总重 (kg) *</label>
-        <input type="number" id="total-weight" placeholder="请输入总重量" min="0.01" step="0.1" />
-      </div>
-      <div class="form-group">
-        <label>总货值</label>
-        <input type="number" id="cargo-value" placeholder="请输入总货值" min="0" step="0.01" />
-      </div>
-      <div class="form-group" style="min-width:120px">
-        <label>币种</label>
-        <select id="currency">
-          <option value="JPY">日元 (JPY)</option>
-          <option value="USD">美元 (USD)</option>
-          <option value="CNY">人民币 (CNY)</option>
-        </select>
+      <!-- 总重（所有产品共用） -->
+      <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #fed7d7">
+        <div class="form-group" style="margin-bottom:0">
+          <label>货物总重量 (kg) <span style="color:#e53e3e;font-weight:bold">*</span></label>
+          <input type="number" id="total-weight" placeholder="所有产品的总重量（kg），仅填写一次" min="0.01" step="0.1" />
+        </div>
       </div>
     </div>
   </div>
@@ -188,6 +221,20 @@ input[type="number"]{-moz-appearance:textfield}
     </div>
 
     <div id="box-list" class="box-list">
+    <div id="oversize-alert" class="oversize-alert">
+      <strong>⚠️ 超尺寸附加费参考（请以实际物流商报价为准）</strong>
+      <div class="oversize-alert-row">
+        <span>单件超30kg</span><span>约 +3~5 CNY/kg</span>
+      </div>
+      <div class="oversize-alert-row">
+        <span>单边超120cm</span><span>约 +50~150 CNY/件</span>
+      </div>
+      <div class="oversize-alert-row">
+        <span>三边和超260cm（空运）</span><span>约 +200~500 CNY/件</span>
+      </div>
+      <div class="oversize-alert-ref">* 参考价，实际费用以日本末端快递商（佐川/Yamato/西濃）为准</div>
+    </div>
+    
       <div class="box-empty">暂无箱子，点击上方按钮添加（可选）</div>
     </div>
   </div>
@@ -197,6 +244,55 @@ input[type="number"]{-moz-appearance:textfield}
     <button class="btn btn-gray" onclick="resetForm()">重置</button>
   </div>
 
+
+<script type="text/template" id="product-row-template">
+  <div class="product-row" id="product-row-{INDEX}">
+    <div class="product-row-header">
+      <span class="product-row-title">产品 {INDEX}</span>
+      <button class="product-row-del" onclick="removeProduct({INDEX})" id="del-btn-{INDEX}" style="display:none">删除此产品</button>
+    </div>
+    <div class="product-fields">
+      <div class="form-row">
+        <div class="form-group" style="min-width:100px">
+          <label>货值</label>
+          <input type="number" id="cargo-value-{INDEX}" placeholder="货值" min="0" step="0.01" oninput="updateProductCost({INDEX})" />
+        </div>
+        <div class="form-group" style="min-width:100px">
+          <label>币种</label>
+          <select id="currency-{INDEX}" onchange="updateProductCost({INDEX})">
+            <option value="JPY">日元 (JPY)</option>
+            <option value="USD">美元 (USD)</option>
+            <option value="CNY">人民币 (CNY)</option>
+          </select>
+        </div>
+        <div class="form-group" style="min-width:80px">
+          <label>实际税率 (%)</label>
+          <input type="number" id="custom-tariff-{INDEX}" placeholder="选填" min="0" max="100" step="0.1" oninput="updateProductCost({INDEX})" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>HS 编码查询</label>
+        <div class="hs-search-row">
+          <div class="form-group" style="margin-bottom:0;flex:1">
+            <input type="text" id="hs-code-{INDEX}" placeholder="输入HS编码，如 6109" maxlength="10"
+              oninput="hsSearchDebounce({INDEX})" onkeydown="if(event.key==='Enter'){event.preventDefault();hsSearchById({INDEX})}" />
+          </div>
+          <button class="btn btn-search btn-sm" onclick="hsSearchById({INDEX})">查询</button>
+        </div>
+        <div class="hs-selected-info" id="hs-selected-{INDEX}">
+          已选择：<strong id="hs-selected-text-{INDEX}"></strong>
+          <button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelectionById({INDEX})">清除</button>
+        </div>
+        <div class="hs-results" id="hs-results-{INDEX}"></div>
+      </div>
+      <div class="product-cost-line" id="product-cost-line-{INDEX}" style="display:none">
+        <span class="product-cost-label">产品 {INDEX} 每 KG 成本参考</span>
+        <span class="product-cost-value" id="product-cost-value-{INDEX}">--</span>
+      </div>
+    </div>
+  </div>
+</script>
+
   <div class="result-card" id="result-card">
     <div class="card" style="margin-top:16px">
       <div id="result-content"></div>
@@ -204,7 +300,7 @@ input[type="number"]{-moz-appearance:textfield}
   </div>
 </div>
 
-<div class="footer">中日贸易包税报价工具 - v2.4</div>
+<div class="footer">中日贸易包税报价工具 - v3.0</div>
 
 <script>
 var MODES = [
@@ -221,14 +317,21 @@ var RATES = { CNY: 23.8794 };
 var currentMode = 0;
 var hsData = {};
 var selectedHs = null;
+var selectedHsMap = {};
 
 var boxes = [];
+var products = [{ id: 1, hs: null, cargoValue: 0, currency: 'JPY', customTariffRate: null }];
+var nextProductId = 2;
+var productHsMatchesMap = {};
 
 function loadHsData() {
   fetch('hs_data.json')
     .then(function(r) { return r.json(); })
-    .then(function(data) { hsData = data; })
-    .catch(function(e) { console.error('Failed to load HS data:', e); });
+    .then(function(data) {
+      hsData = data;
+      renderProductList();
+    })
+    .catch(function(e) { console.error('Failed to load HS data:', e); renderProductList(); });
 }
 loadHsData();
 
@@ -241,16 +344,15 @@ function selectMode(idx) {
   }
 }
 
-function searchHs() {
-  var q = document.getElementById('hs-code').value.trim();
-  var resultsEl = document.getElementById('hs-results');
+function hsSearchById(productId) {
+  var q = document.getElementById('hs-code-' + productId).value.trim();
+  var resultsEl = document.getElementById('hs-results-' + productId);
 
   if (!q) {
     resultsEl.classList.remove('show');
     resultsEl.innerHTML = '';
     return;
   }
-
   if (Object.keys(hsData).length === 0) {
     resultsEl.classList.add('show');
     resultsEl.innerHTML = '<div class="alert-box alert-red">HS编码数据正在加载中，请稍后重试。</div>';
@@ -275,48 +377,52 @@ function searchHs() {
     return;
   }
 
-  var html = '<div class="hs-results-header"><span>找到 ' + matches.length + ' 条匹配结果，请选择对应项：</span></div>';
-
+  var rHtml = '<div class="hs-results-header"><span>找到 ' + matches.length + ' 条匹配结果，请选择：</span></div>';
   for (var i = 0; i < matches.length; i++) {
     var m = matches[i];
     var isZero = m.rate_pct === 0 || m.rate === '(無税)';
-    html += '<div class="hs-option' + (isZero ? ' rate-zero' : '') + '" onclick="pickHs(' + i + ')" id="hs-opt-' + i + '">';
-    html += '<div class="hs-option-code">' + m.code + '</div>';
-    html += '<div class="hs-option-desc">' + m.desc + '</div>';
-    var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
-    html += '<span class="hs-option-rate">税率：' + rateDisplay + '</span>';
-    html += '</div>';
+    rHtml += '<div class="hs-option' + (isZero ? ' rate-zero' : '') + '" onclick="pickHsById(' + productId + ',' + i + ')" id="hs-opt-' + productId + '-' + i + '">';
+    rHtml += '<div class="hs-option-code">' + m.code + '</div>';
+    rHtml += '<div class="hs-option-desc">' + m.desc + '</div>';
+    rHtml += '<span class="hs-option-rate">税率：' + formatRateDisplay(m.rate_pct, m.rate) + '</span>';
+    rHtml += '</div>';
   }
 
-  resultsEl.innerHTML = html;
+  resultsEl.innerHTML = rHtml;
   resultsEl.classList.add('show');
-
-  window._hsMatches = matches;
+  productHsMatchesMap[productId] = matches;
 }
 
-function pickHs(idx) {
-  var m = window._hsMatches[idx];
-  selectedHs = m;
-
-  var allOpts = document.querySelectorAll('.hs-option');
-  for (var i = 0; i < allOpts.length; i++) {
-    allOpts[i].classList.remove('selected');
-  }
-  document.getElementById('hs-opt-' + idx).classList.add('selected');
-
-  var rateDisplay = formatRateDisplay(m.rate_pct, m.rate);
-  document.getElementById('hs-selected-text').textContent = m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + rateDisplay + '）';
-  document.getElementById('hs-selected').classList.add('show');
+function hsSearchDebounce(productId) {
+  clearTimeout(window._hsDebounceMap = window._hsDebounceMap || {});
+  window._hsDebounceMap[productId] = setTimeout(function() { hsSearchById(productId); }, 500);
 }
 
-function clearHsSelection() {
-  selectedHs = null;
-  document.getElementById('hs-selected').classList.remove('show');
-  var allOpts = document.querySelectorAll('.hs-option');
-  for (var i = 0; i < allOpts.length; i++) {
-    allOpts[i].classList.remove('selected');
-  }
+function pickHsById(productId, idx) {
+  var matches = productHsMatchesMap[productId] || [];
+  var m = matches[idx];
+  if (!m) return;
+  var p = products.find(function(x) { return x.id === productId; });
+  if (p) p.hs = m;
+  document.getElementById('hs-selected-text-' + productId).textContent =
+    m.code + ' - ' + m.desc.substring(0, 60) + (m.desc.length > 60 ? '...' : '') + '（' + formatRateDisplay(m.rate_pct, m.rate) + '）';
+  document.getElementById('hs-selected-' + productId).classList.add('show');
+  document.getElementById('hs-results-' + productId).classList.remove('show');
+  updateProductCost(productId);
 }
+
+function clearHsSelectionById(productId) {
+  var p = products.find(function(x) { return x.id === productId; });
+  if (p) p.hs = null;
+  document.getElementById('hs-selected-' + productId).classList.remove('show');
+  updateProductCost(productId);
+}
+
+function searchHs() { hsSearchById(1); }
+
+function pickHs(idx) { pickHsById(1, idx); }
+
+function clearHsSelection() { clearHsSelectionById(1); }
 
 function addBox() {
   var length = parseFloat(document.getElementById('box-length').value) || 0;
@@ -339,16 +445,20 @@ function removeBox(index) {
 
 function renderBoxList() {
   var el = document.getElementById('box-list');
+  var alertEl = document.getElementById('oversize-alert');
   if (boxes.length === 0) {
     el.innerHTML = '<div class="box-empty">暂无箱子，点击上方按钮添加（可选）</div>';
+    if (alertEl) alertEl.classList.remove('show');
     return;
   }
 
+  var hasOversize = false;
   var html = '';
   for (var i = 0; i < boxes.length; i++) {
     var b = boxes[i];
     var sum = b.length + b.width + b.height;
     var sumColor = sum > 260 ? '#e53e3e' : '#38a169';
+    if (sum > 260) hasOversize = true;
     html += '<div class="box-item">';
     html += '<div class="box-item-index">' + (i + 1) + '</div>';
     html += '<div class="box-item-info">';
@@ -360,6 +470,10 @@ function renderBoxList() {
     html += '</div>';
   }
   el.innerHTML = html;
+  if (alertEl) {
+    if (hasOversize) alertEl.classList.add('show');
+    else alertEl.classList.remove('show');
+  }
 }
 
 function clearBoxForm() {
@@ -384,31 +498,138 @@ function formatMoney(val, currency) {
 
 function val(id) { return document.getElementById(id).value.trim(); }
 
+// ===== 多产品渲染与管理 =====
+function renderProductList() {
+  var listEl = document.getElementById('product-list');
+  var countEl = document.getElementById('product-count');
+  if (!listEl) return;
+  countEl.textContent = products.length;
+
+  var html = '';
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var delDisplay = products.length > 1 ? 'inline' : 'none';
+    html += '<div class="product-row" id="product-row-' + p.id + '">';
+    html += '<div class="product-row-header">';
+    html += '<span class="product-row-title">产品 ' + (i + 1) + '</span>';
+    html += '<button class="product-row-del" onclick="removeProduct(' + p.id + ')" id="del-btn-' + p.id + '" style="display:' + delDisplay + '">删除此产品</button>';
+    html += '</div>';
+    html += '<div class="product-fields">';
+    html += '<div class="form-row">';
+    html += '<div class="form-group" style="min-width:100px"><label>货值</label>';
+    html += '<input type="number" id="cargo-value-' + p.id + '" placeholder="货值" min="0" step="0.01" value="' + (p.cargoValue || '') + '" oninput="onProductFieldChange(' + p.id + ')" /></div>';
+    html += '<div class="form-group" style="min-width:100px"><label>币种</label>';
+    html += '<select id="currency-' + p.id + '" onchange="onProductFieldChange(' + p.id + ')">';
+    html += '<option value="JPY"' + (p.currency === 'JPY' ? ' selected' : '') + '>日元 (JPY)</option>';
+    html += '<option value="USD"' + (p.currency === 'USD' ? ' selected' : '') + '>美元 (USD)</option>';
+    html += '<option value="CNY"' + (p.currency === 'CNY' ? ' selected' : '') + '>人民币 (CNY)</option>';
+    html += '</select></div>';
+    html += '<div class="form-group" style="min-width:80px"><label>实际税率 (%)</label>';
+    html += '<input type="number" id="custom-tariff-' + p.id + '" placeholder="选填" min="0" max="100" step="0.1" value="' + (p.customTariffRate !== null ? p.customTariffRate : '') + '" oninput="onProductFieldChange(' + p.id + ')" /></div>';
+    html += '</div>';
+    html += '<div class="form-group" style="margin-bottom:0">';
+    html += '<label>HS 编码查询</label>';
+    html += '<div class="hs-search-row">';
+    html += '<div class="form-group" style="margin-bottom:0;flex:1">';
+    html += '<input type="text" id="hs-code-' + p.id + '" placeholder="输入HS编码，如 6109" maxlength="10"';
+    html += ' oninput="hsSearchDebounce(' + p.id + ')" onkeydown="if(event.key===\'Enter\'){event.preventDefault();hsSearchById(' + p.id + ')}" /></div>';
+    html += '<button class="btn btn-search btn-sm" onclick="hsSearchById(' + p.id + ')">查询</button>';
+    html += '</div>';
+    if (p.hs) {
+      html += '<div class="hs-selected-info show" id="hs-selected-' + p.id + '">已选择：<strong id="hs-selected-text-' + p.id + '">' + p.hs.code + ' - ' + p.hs.desc.substring(0, 60) + '（' + formatRateDisplay(p.hs.rate_pct, p.hs.rate) + '）</strong>';
+      html += '<button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelectionById(' + p.id + ')">清除</button></div>';
+    } else {
+      html += '<div class="hs-selected-info" id="hs-selected-' + p.id + '">已选择：<strong id="hs-selected-text-' + p.id + '"></strong>';
+      html += '<button class="btn btn-gray btn-sm" style="margin-left:8px;padding:2px 10px;font-size:0.78rem" onclick="clearHsSelectionById(' + p.id + ')">清除</button></div>';
+    }
+    html += '<div class="hs-results" id="hs-results-' + p.id + '"></div>';
+    html += '</div>';
+    html += '<div class="product-cost-line" id="product-cost-line-' + p.id + '">';
+    html += '<span class="product-cost-label">每 KG 成本参考</span>';
+    html += '<span class="product-cost-value" id="product-cost-value-' + p.id + '">--</span></div>';
+    html += '</div></div></div>';
+  }
+  listEl.innerHTML = html;
+}
+
+function onProductFieldChange(productId) {
+  var p = products.find(function(x) { return x.id === productId; });
+  if (!p) return;
+  p.cargoValue = parseFloat(document.getElementById('cargo-value-' + productId).value) || 0;
+  p.currency = document.getElementById('currency-' + productId).value;
+  p.customTariffRate = document.getElementById('custom-tariff-' + productId).value.trim() !== '' ? parseFloat(document.getElementById('custom-tariff-' + productId).value) : null;
+  updateProductCost(productId);
+}
+
+function updateProductCost(productId) {
+  var p = products.find(function(x) { return x.id === productId; });
+  if (!p) return;
+  var cargoValue = parseFloat(document.getElementById('cargo-value-' + productId).value) || 0;
+  var currency = document.getElementById('currency-' + productId).value;
+  var customTariffRate = document.getElementById('custom-tariff-' + productId).value.trim() !== '' ? parseFloat(document.getElementById('custom-tariff-' + productId).value) : null;
+  var hs = p.hs;
+  var totalWeight = parseFloat(document.getElementById('total-weight').value) || 1;
+
+  var CNY_TO_JPY = 23.8794;
+  var USD_TO_CNY = 1 / 0.1472;
+  if (currency === 'CNY') cargoValue = cargoValue * CNY_TO_JPY;
+  else if (currency === 'USD') cargoValue = cargoValue * USD_TO_CNY * CNY_TO_JPY;
+
+  var lineEl = document.getElementById('product-cost-line-' + productId);
+  var valEl = document.getElementById('product-cost-value-' + productId);
+  if (!lineEl || !valEl) return;
+
+  var tariffRate = customTariffRate !== null ? Math.abs(customTariffRate) : (hs && hs.rate_pct !== null ? Math.abs(hs.rate_pct) : null);
+
+  if (cargoValue <= 0 || tariffRate === null) {
+    lineEl.style.display = 'none';
+    return;
+  }
+
+  var serviceFee = cargoValue * 0.03;
+  var customsDuty = cargoValue * (tariffRate / 100);
+  var consumptionTax = (cargoValue + customsDuty) * 0.078;
+  var localTax = consumptionTax * (22 / 78);
+  var taxCNY = (customsDuty + consumptionTax + localTax) / CNY_TO_JPY;
+  var serviceFeeCNY = serviceFee / CNY_TO_JPY;
+  var shippingRate = MODES[currentMode].rate;
+  var costPerKg = (serviceFeeCNY + taxCNY) / totalWeight + shippingRate;
+
+  lineEl.style.display = 'flex';
+  valEl.textContent = '¥ ' + costPerKg.toFixed(2) + ' CNY/kg';
+}
+
+function addProduct() {
+  var newId = nextProductId++;
+  products.push({ id: newId, hs: null, cargoValue: 0, currency: 'JPY', customTariffRate: null });
+  renderProductList();
+}
+
+function removeProduct(productId) {
+  if (products.length <= 1) return;
+  products = products.filter(function(x) { return x.id !== productId; });
+  renderProductList();
+}
+
 function calc() {
   var errors = [];
   var totalWeight = parseFloat(document.getElementById('total-weight').value) || 0;
-  var cargoValue = parseFloat(document.getElementById('cargo-value').value) || 0;
-  var currency = document.getElementById('currency').value;
-  var mode = MODES[currentMode];
+  if (totalWeight <= 0) errors.push('请填写货物总重量（所有产品共用）');
 
-  // === 货值币种统一转换为日元（计算前必须先统一币种）===
-  // 汇率：1 CNY = 23.8794 JPY；1 USD = 6.793 CNY = 6.793×23.8794 ≈ 162.22 JPY
-  var CNY_TO_JPY = 23.8794;
-  var USD_TO_CNY = 1 / 0.1472;
-  if (currency === 'CNY') {
-    cargoValue = cargoValue * CNY_TO_JPY; // CNY → JPY
-  } else if (currency === 'USD') {
-    cargoValue = cargoValue * USD_TO_CNY * CNY_TO_JPY; // USD → CNY → JPY
-  }
-  // currency === 'JPY' 时保持不变
-
-  var customTariffRateVal = document.getElementById('custom-tariff-rate').value.trim();
-  var customTariffRate = customTariffRateVal ? parseFloat(customTariffRateVal) : null;
-  if (totalWeight <= 0) errors.push('请填写货物总重');
-  if (!selectedHs && customTariffRate === null) errors.push('请选择HS编码或填写实际税率（%）');
-
-  if (selectedHs && selectedHs.rate_pct === null) {
-    errors.push('所选择的HS编码税率格式特殊（' + selectedHs.rate + '），无法自动计算百分比税率，请确认');
+  // 收集各产品货值并同步到 products 数组
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    p.cargoValue = parseFloat(document.getElementById('cargo-value-' + p.id).value) || 0;
+    p.currency = document.getElementById('currency-' + p.id).value;
+    var customInput = document.getElementById('custom-tariff-' + p.id).value.trim();
+    p.customTariffRate = customInput !== '' ? parseFloat(customInput) : null;
+    if (p.cargoValue <= 0) errors.push('产品 ' + (i + 1) + ' 未填写货值');
+    if (!p.hs && p.customTariffRate === null) {
+      errors.push('产品 ' + (i + 1) + ' 请选择 HS 编码或填写实际税率');
+    }
+    if (p.hs && p.hs.rate_pct === null) {
+      errors.push('产品 ' + (i + 1) + ' HS编码税率格式特殊，无法计算，请填写实际税率覆盖');
+    }
   }
 
   for (var i = 0; i < boxes.length; i++) {
@@ -431,50 +652,63 @@ function calc() {
     return;
   }
 
-  var tariffRate = customTariffRate !== null ? Math.abs(customTariffRate) : Math.abs(selectedHs.rate_pct);
-
-  // === 核心计算（参考 Excel 税金逻辑）===
-  // 手续费 = 货值 x 3%
-  var serviceFee = cargoValue * 0.03;
-
-  // 关税 = 货值 x 实际税率
-  var customsDuty = cargoValue * (tariffRate / 100);
-
-  // 消费税 = (货值 + 关税) x 7.8%（日本消费税率）
-  var consumptionTax = (cargoValue + customsDuty) * 0.078;
-
-  // 地方消费税 = 消费税 x 22/78
-  var localTax = consumptionTax * (22 / 78);
-
-  // 税金合计 = 关税 + 消费税 + 地方消费税
-  var tax = customsDuty + consumptionTax + localTax;
-
-  // 税金取整
-  var taxRounded = Math.round(tax);
-
-  // 转换为人民币（货值已统一为JPY，统一JPY→CNY换算）
-  // 1 CNY = 23.8794 JPY → JPY / 23.8794 = CNY
-  var serviceFeeCNY = serviceFee / CNY_TO_JPY;
-  var customsDutyCNY = customsDuty / CNY_TO_JPY;
-  var consumptionTaxCNY = consumptionTax / CNY_TO_JPY;
-  var localTaxCNY = localTax / CNY_TO_JPY;
-
-  var taxCNY = customsDutyCNY + consumptionTaxCNY + localTaxCNY;
-
-  var feeSumCNY = serviceFeeCNY + taxCNY;
+  var CNY_TO_JPY = 23.8794;
+  var USD_TO_CNY = 1 / 0.1472;
   var isCostMode = document.getElementById('cost-mode-cb').checked;
+  var mode = MODES[currentMode];
   var costRates = [6, 10, 13.5];
   var shippingRate = isCostMode ? costRates[currentMode] : mode.rate;
-  var costPerKg = feeSumCNY / totalWeight + shippingRate;
+
+  var totalCostCNY = 0;
+  var productResults = [];
+
+  for (var i = 0; i < products.length; i++) {
+    var p = products[i];
+    var cargoValueJpy = p.cargoValue;
+    if (p.currency === 'CNY') cargoValueJpy = p.cargoValue * CNY_TO_JPY;
+    else if (p.currency === 'USD') cargoValueJpy = p.cargoValue * USD_TO_CNY * CNY_TO_JPY;
+
+    var tariffRate = p.customTariffRate !== null ? Math.abs(p.customTariffRate) : Math.abs(p.hs.rate_pct);
+    var serviceFee = cargoValueJpy * 0.03;
+    var customsDuty = cargoValueJpy * (tariffRate / 100);
+    var consumptionTax = (cargoValueJpy + customsDuty) * 0.078;
+    var localTax = consumptionTax * (22 / 78);
+    var taxCNY = (customsDuty + consumptionTax + localTax) / CNY_TO_JPY;
+    var serviceFeeCNY = serviceFee / CNY_TO_JPY;
+    var costPerKg = (serviceFeeCNY + taxCNY) / totalWeight + shippingRate;
+    totalCostCNY += (serviceFeeCNY + taxCNY) / totalWeight;
+    productResults.push({ index: i + 1, costPerKg: costPerKg });
+  }
+
+  var blendedCost = totalCostCNY + shippingRate;
 
   resultBox.classList.add('show');
   var html = '';
 
-  html += '<div class="result-price-card">';
-  var labelText = isCostMode ? '每 KG 除尾程成本（关税+消费税+手续费）' : '每 KG 成本';
-  html += '<div class="result-price-label">' + labelText + '</div>';
-  html += '<div class="result-price-value">\u00a5 ' + costPerKg.toFixed(2) + ' <span class="result-price-unit">CNY/kg</span></div>';
-  html += '</div>';
+  // 单产品时用简单展示
+  if (products.length === 1) {
+    html += '<div class="result-price-card">';
+    html += '<div class="result-price-label">' + (isCostMode ? '每 KG 除尾程成本（关税+消费税+手续费）' : '每 KG 成本') + '</div>';
+    html += '<div class="result-price-value">¥ ' + productResults[0].costPerKg.toFixed(2) + ' <span class="result-price-unit">CNY/kg</span></div>';
+    html += '</div>';
+  } else {
+    // 多产品：各产品成本 + 加权均价
+    html += '<div style="margin-bottom:14px;font-size:0.88rem;color:#718096">';
+    html += '产品列表（共 ' + products.length + ' 个，总重 ' + totalWeight + ' kg）</div>';
+    for (var i = 0; i < productResults.length; i++) {
+      var pr = productResults[i];
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;';
+      html += 'background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;';
+      html += 'padding:10px 14px;margin-bottom:8px;font-size:0.9rem">';
+      html += '<span style="color:#4a5568"><strong>产品 ' + pr.index + '</strong></span>';
+      html += '<span style="color:#2b6cb0;font-weight:bold">¥ ' + pr.costPerKg.toFixed(2) + ' CNY/kg</span></div>';
+    }
+    html += '<div class="total-blended-card">';
+    html += '<div class="total-blended-label">加权均价（总成本 ÷ 总重）</div>';
+    html += '<div class="total-blended-value">¥ ' + blendedCost.toFixed(2) + ' <span class="total-blended-unit">CNY/kg</span></div>';
+    html += '<div class="total-blended-count">共 ' + products.length + ' 个产品，合计总重 ' + totalWeight + ' kg</div>';
+    html += '</div>';
+  }
 
   content.innerHTML = html;
 }
@@ -483,30 +717,16 @@ function resetForm() {
   boxes = [];
   renderBoxList();
   clearBoxForm();
-  clearHsSelection();
-  document.getElementById('hs-code').value = '';
-  document.getElementById('hs-results').classList.remove('show');
-  document.getElementById('hs-results').innerHTML = '';
+  products = [{ id: 1, hs: null, cargoValue: 0, currency: 'JPY', customTariffRate: null }];
+  nextProductId = 2;
+  renderProductList();
   document.getElementById('total-weight').value = '';
-  document.getElementById('cargo-value').value = '';
-  document.getElementById('custom-tariff-rate').value = '';
-  document.getElementById('currency').value = 'JPY';
   document.getElementById('cost-mode-cb').checked = false;
   document.getElementById('result-card').classList.remove('show');
   selectMode(0);
 }
 
-// HS编码搜索自动触发（输入时自动查询，带500ms防抖）
-var hsCodeTimer = null;
-document.getElementById('hs-code').addEventListener('input', function() {
-  clearTimeout(hsCodeTimer);
-  hsCodeTimer = setTimeout(function() {
-    searchHs();
-  }, 500);
-});
-document.getElementById('hs-code').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); searchHs(); }
-});
+// HS listeners managed per-product in renderProductList()
 </script>
 </body>
 </html>
