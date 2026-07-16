@@ -133,6 +133,14 @@ input[type="number"]{-moz-appearance:textfield}
 .product-fields .form-row{display:flex;gap:10px;flex-wrap:wrap}
 .product-fields .form-row .form-group{flex:1;min-width:130px}
 
+
+/* ---- 21KG最低起收提示 ---- */
+.min-weight-notice{display:none;align-items:center;gap:6px;
+  background:#fff8e1;border:1px solid #ffe082;border-radius:8px;
+  padding:8px 14px;font-size:0.82rem;color:#b7791f;margin-top:8px}
+.min-weight-notice.show{display:flex}
+.min-weight-notice strong{color:#c05621}
+
 </style></head>
 <body>
 <div class="container">
@@ -186,6 +194,9 @@ input[type="number"]{-moz-appearance:textfield}
         <div class="form-group" style="margin-bottom:0">
           <label>货物总重量 (kg) <span style="color:#e53e3e;font-weight:bold">*</span></label>
           <input type="number" id="total-weight" placeholder="所有产品的总重量（kg），仅填写一次" min="0.01" step="0.1" />
+    <div class="min-weight-notice" id="min-weight-notice">
+      <span>⚠️ 渠道最低21KG起收，已按21KG计算</span>
+    </div>
         </div>
       </div>
     </div>
@@ -293,7 +304,7 @@ input[type="number"]{-moz-appearance:textfield}
   </div>
 </div>
 
-<div class="footer">中日贸易包税报价工具 - v3.0</div>
+<div class="footer">中日贸易包税报价工具 - v3.1</div>
 
 <script>
 var MODES = [
@@ -566,6 +577,8 @@ function removeProduct(productId) {
 function calc() {
   var errors = [];
   var totalWeight = parseFloat(document.getElementById('total-weight').value) || 0;
+  var billingWeight = Math.max(totalWeight, 21); // 最低21KG计费
+
   if (totalWeight <= 0) errors.push('请填写货物总重量（所有产品共用）');
 
   // 收集各产品货值并同步到 products 数组
@@ -611,8 +624,7 @@ function calc() {
   var costRates = [6, 10, 13.5];
   var shippingRate = isCostMode ? costRates[currentMode] : mode.rate;
 
-  var totalCostCNY = 0;
-  var productResults = [];
+  var totalFeeTaxCNY = 0;
 
   for (var i = 0; i < products.length; i++) {
     var p = products[i];
@@ -627,40 +639,32 @@ function calc() {
     var localTax = consumptionTax * (22 / 78);
     var taxCNY = (customsDuty + consumptionTax + localTax) / CNY_TO_JPY;
     var serviceFeeCNY = serviceFee / CNY_TO_JPY;
-    var costPerKg = (serviceFeeCNY + taxCNY) / totalWeight + shippingRate;
-    totalCostCNY += (serviceFeeCNY + taxCNY) / totalWeight;
-    productResults.push({ index: i + 1, costPerKg: costPerKg });
+    totalFeeTaxCNY += (serviceFeeCNY + taxCNY);
   }
 
-  var blendedCost = totalCostCNY + shippingRate;
+  // 税金+手续费总费用 ÷ 计费重量 + 运费单价 = 每KG总成本
+  var costPerKg = totalFeeTaxCNY / billingWeight + shippingRate;
+
+  // 21KG提示
+  var minNoticeEl = document.getElementById('min-weight-notice');
+  if (minNoticeEl) {
+    if (totalWeight > 0 && totalWeight < 21) minNoticeEl.classList.add('show');
+    else minNoticeEl.classList.remove('show');
+  }
 
   resultBox.classList.add('show');
   var html = '';
 
-  // 单产品时用简单展示
-  if (products.length === 1) {
-    html += '<div class="result-price-card">';
-    html += '<div class="result-price-label">' + (isCostMode ? '每 KG 除尾程成本（关税+消费税+手续费）' : '每 KG 成本') + '</div>';
-    html += '<div class="result-price-value">¥ ' + productResults[0].costPerKg.toFixed(2) + ' <span class="result-price-unit">CNY/kg</span></div>';
-    html += '</div>';
-  } else {
-    // 多产品：各产品成本 + 加权均价
-    html += '<div style="margin-bottom:14px;font-size:0.88rem;color:#718096">';
-    html += '产品列表（共 ' + products.length + ' 个，总重 ' + totalWeight + ' kg）</div>';
-    for (var i = 0; i < productResults.length; i++) {
-      var pr = productResults[i];
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;';
-      html += 'background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;';
-      html += 'padding:10px 14px;margin-bottom:8px;font-size:0.9rem">';
-      html += '<span style="color:#4a5568"><strong>产品 ' + pr.index + '</strong></span>';
-      html += '<span style="color:#2b6cb0;font-weight:bold">¥ ' + pr.costPerKg.toFixed(2) + ' CNY/kg</span></div>';
-    }
-    html += '<div class="total-blended-card">';
-    html += '<div class="total-blended-label">加权均价（总成本 ÷ 总重）</div>';
-    html += '<div class="total-blended-value">¥ ' + blendedCost.toFixed(2) + ' <span class="total-blended-unit">CNY/kg</span></div>';
-    html += '<div class="total-blended-count">共 ' + products.length + ' 个产品，合计总重 ' + totalWeight + ' kg</div>';
-    html += '</div>';
+  html += '<div class="result-price-card">';
+  var labelText = isCostMode
+    ? '每 KG 除尾程成本（关税+消费税+手续费）'
+    : '每 KG 成本';
+  if (totalWeight > 0 && totalWeight < 21) {
+    labelText += ' <span style="color:#c05621;font-weight:normal">(按21KG最低起收计算)</span>';
   }
+  html += '<div class="result-price-label">' + labelText + '</div>';
+  html += '<div class="result-price-value">¥ ' + costPerKg.toFixed(2) + ' <span class="result-price-unit">CNY/kg</span></div>';
+  html += '</div>';
 
   content.innerHTML = html;
 }
