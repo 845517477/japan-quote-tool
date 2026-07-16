@@ -141,6 +141,23 @@ input[type="number"]{-moz-appearance:textfield}
 .min-weight-notice.show{display:flex}
 .min-weight-notice strong{color:#c05621}
 
+
+/* ---- 体积重选项与重量对比 ---- */
+.vol-weight-check{display:flex;align-items:center;gap:8px;margin:0 0 12px 2px;
+  font-size:0.85rem;color:#2d3748;cursor:pointer;user-select:none}
+.vol-weight-check input{width:16px;height:16px;cursor:pointer}
+.vol-weight-hint{color:#718096;font-size:0.78rem}
+.weight-compare-card{background:#f0f9ff;border:1px solid #bee3f8;border-radius:8px;
+  padding:12px 16px;margin-bottom:14px}
+.weight-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:0.88rem;padding:5px 0;color:#4a5568}
+.weight-row .wv{font-weight:bold;color:#2b6cb0}
+.weight-row.weight-used{margin-top:4px;padding-top:9px;border-top:1px dashed #90cdf4}
+.weight-row.weight-used .wl{font-weight:bold;color:#2c5282}
+.weight-row.weight-used .wv{color:#c05621;font-size:1.02rem}
+.weight-badge{display:inline-block;background:#c05621;color:#fff;font-size:0.7rem;
+  border-radius:4px;padding:1px 6px;margin-left:6px}
+
 </style></head>
 <body>
 <div class="container">
@@ -192,8 +209,8 @@ input[type="number"]{-moz-appearance:textfield}
       <!-- 总重（所有产品共用） -->
       <div style="margin-top:14px;padding-top:14px;border-top:2px dashed #fed7d7">
         <div class="form-group" style="margin-bottom:0">
-          <label>货物总重量 (kg) <span style="color:#e53e3e;font-weight:bold">*</span></label>
-          <input type="number" id="total-weight" placeholder="所有产品的总重量（kg），仅填写一次" min="0.01" step="0.1" />
+          <label>实重 (kg) <span style="color:#e53e3e;font-weight:bold">*</span></label>
+          <input type="number" id="total-weight" placeholder="所有产品的实际重量（kg），仅填写一次" min="0.01" step="0.1" />
     <div class="min-weight-notice" id="min-weight-notice">
       <span>⚠️ 渠道最低21KG起收，已按21KG计算</span>
     </div>
@@ -205,6 +222,11 @@ input[type="number"]{-moz-appearance:textfield}
   <div class="card">
     <h2>箱子尺寸</h2>
     <p style="font-size:0.82rem;color:#718096;margin-bottom:12px">添加箱子尺寸，用于检查是否超限（三边和超过260cm拦截）。</p>
+    <label class="vol-weight-check">
+      <input type="checkbox" id="vol-weight-cb" />
+      <span>计算体积重</span>
+      <span class="vol-weight-hint">（勾选后按 长×宽×高÷6000×箱数 计算体积重，与实重取大值计费）</span>
+    </label>
 
     <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:12px">
       <div class="form-row" style="margin-bottom:10px">
@@ -304,7 +326,7 @@ input[type="number"]{-moz-appearance:textfield}
   </div>
 </div>
 
-<div class="footer">中日贸易包税报价工具 - v3.1</div>
+<div class="footer">中日贸易包税报价工具 - v3.2</div>
 
 <script>
 var MODES = [
@@ -576,10 +598,23 @@ function removeProduct(productId) {
 
 function calc() {
   var errors = [];
-  var totalWeight = parseFloat(document.getElementById('total-weight').value) || 0;
-  var billingWeight = Math.max(totalWeight, 21); // 最低21KG计费
+  var realWeight = parseFloat(document.getElementById('total-weight').value) || 0;
+  var useVolWeight = document.getElementById('vol-weight-cb').checked;
 
-  if (totalWeight <= 0) errors.push('请填写货物总重量（所有产品共用）');
+  // 体积重 = Σ(长×宽×高÷6000×箱数)
+  var volumetricWeight = 0;
+  if (useVolWeight) {
+    for (var i = 0; i < boxes.length; i++) {
+      var b = boxes[i];
+      volumetricWeight += (b.length * b.width * b.height / 6000) * b.qty;
+    }
+  }
+
+  // 计费重量 = max(实重, 体积重)，最低21KG起收
+  var chargeableRaw = Math.max(realWeight, volumetricWeight);
+  var billingWeight = Math.max(chargeableRaw, 21);
+
+  if (realWeight <= 0) errors.push('请填写实重（所有产品共用）');
 
   // 收集各产品货值并同步到 products 数组
   for (var i = 0; i < products.length; i++) {
@@ -648,18 +683,30 @@ function calc() {
   // 21KG提示
   var minNoticeEl = document.getElementById('min-weight-notice');
   if (minNoticeEl) {
-    if (totalWeight > 0 && totalWeight < 21) minNoticeEl.classList.add('show');
+    if (realWeight > 0 && realWeight < 21) minNoticeEl.classList.add('show');
     else minNoticeEl.classList.remove('show');
   }
 
   resultBox.classList.add('show');
   var html = '';
 
+  // 重量对比卡
+  html += '<div class="weight-compare-card">';
+  html += '<div class="weight-row"><span class="wl">实重</span><span class="wv">' + realWeight.toFixed(2) + ' kg</span></div>';
+  if (useVolWeight) {
+    html += '<div class="weight-row"><span class="wl">体积重</span><span class="wv">' + volumetricWeight.toFixed(2) + ' kg</span></div>';
+  }
+  var usedBy = useVolWeight
+    ? (volumetricWeight >= realWeight ? '体积重' : '实重')
+    : '实重';
+  html += '<div class="weight-row weight-used"><span class="wl">计费重量<span class="weight-badge">取' + usedBy + '</span></span><span class="wv">' + billingWeight.toFixed(2) + ' kg</span></div>';
+  html += '</div>';
+
   html += '<div class="result-price-card">';
   var labelText = isCostMode
     ? '每 KG 除尾程成本（关税+消费税+手续费）'
     : '每 KG 成本';
-  if (totalWeight > 0 && totalWeight < 21) {
+  if (realWeight > 0 && realWeight < 21) {
     labelText += ' <span style="color:#c05621;font-weight:normal">(按21KG最低起收计算)</span>';
   }
   html += '<div class="result-price-label">' + labelText + '</div>';
@@ -677,6 +724,8 @@ function resetForm() {
   nextProductId = 2;
   renderProductList();
   document.getElementById('total-weight').value = '';
+  var volCb = document.getElementById('vol-weight-cb');
+  if (volCb) volCb.checked = false;
   document.getElementById('cost-mode-cb').checked = false;
   document.getElementById('result-card').classList.remove('show');
   selectMode(0);
