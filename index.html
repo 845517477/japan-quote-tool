@@ -225,7 +225,7 @@ input[type="number"]{-moz-appearance:textfield}
     <label class="vol-weight-check">
       <input type="checkbox" id="vol-weight-cb" />
       <span>计算体积重</span>
-      <span class="vol-weight-hint">（勾选后按 长×宽×高÷6000×箱数 计算体积重，与实重取大值计费）</span>
+      <span class="vol-weight-hint">（勾选后自动计算体积重，与实重取较大值计费）</span>
     </label>
 
     <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:12px">
@@ -329,16 +329,13 @@ input[type="number"]{-moz-appearance:textfield}
 <div class="footer">中日贸易包税报价工具 - v3.2</div>
 
 <script>
-var MODES = [
-  { name: '海运货物', rate: 7 },
-  { name: '空运普货', rate: 12.5 },
-  { name: '空运带电货物', rate: 16 }
+var MODES=[
+ {name:'海运货物',rate:14/2},
+ {name:'空运普货',rate:25/2},
+ {name:'空运带电货物',rate:32/2}
 ];
 
-// 汇率：1 人民币 ≈ 23.8794 日元，1 人民币 ≈ 0.1472 美元
-// 汇率（以人民币为基准的倒数）：1 CNY = 23.8794 JPY, 1 CNY = 0.1472 USD
-// 转换公式：JPY→CNY = JPY / 23.8794，USD→CNY = USD / 6.793（1/0.1472）
-var RATES = { CNY: 23.8794 };
+var RATES={CNY:119397/5000};
 
 var currentMode = 0;
 var hsData = {};
@@ -596,126 +593,7 @@ function removeProduct(productId) {
   renderProductList();
 }
 
-function calc() {
-  var errors = [];
-  var realWeight = parseFloat(document.getElementById('total-weight').value) || 0;
-  var useVolWeight = document.getElementById('vol-weight-cb').checked;
-
-  // 体积重 = Σ(长×宽×高÷6000×箱数)
-  var volumetricWeight = 0;
-  if (useVolWeight) {
-    for (var i = 0; i < boxes.length; i++) {
-      var b = boxes[i];
-      volumetricWeight += (b.length * b.width * b.height / 6000) * b.qty;
-    }
-  }
-
-  // 计费重量 = max(实重, 体积重)，最低21KG起收
-  var chargeableRaw = Math.max(realWeight, volumetricWeight);
-  var billingWeight = Math.max(chargeableRaw, 21);
-
-  if (realWeight <= 0) errors.push('请填写实重（所有产品共用）');
-
-  // 收集各产品货值并同步到 products 数组
-  for (var i = 0; i < products.length; i++) {
-    var p = products[i];
-    p.cargoValue = parseFloat(document.getElementById('cargo-value-' + p.id).value) || 0;
-    p.currency = document.getElementById('currency-' + p.id).value;
-    var customInput = document.getElementById('custom-tariff-' + p.id).value.trim();
-    p.customTariffRate = customInput !== '' ? parseFloat(customInput) : null;
-    if (p.cargoValue <= 0) errors.push('产品 ' + (i + 1) + ' 未填写货值');
-    if (!p.hs && p.customTariffRate === null) {
-      errors.push('产品 ' + (i + 1) + ' 请选择 HS 编码或填写实际税率');
-    }
-    if (p.hs && p.hs.rate_pct === null) {
-      errors.push('产品 ' + (i + 1) + ' HS编码税率格式特殊，无法计算，请填写实际税率覆盖');
-    }
-  }
-
-  for (var i = 0; i < boxes.length; i++) {
-    var b = boxes[i];
-    var sum = b.length + b.width + b.height;
-    if (sum > 260) errors.push('箱' + (i + 1) + ' 三边和 ' + sum + 'cm 超过260cm，无法运输');
-  }
-
-  var resultBox = document.getElementById('result-card');
-  var content = document.getElementById('result-content');
-
-  if (errors.length > 0) {
-    resultBox.classList.add('show');
-    var errHtml = '<div class="alert-box alert-red"><strong>无法计算，请修正以下问题：</strong><ul style="margin-top:8px;padding-left:18px">';
-    for (var i = 0; i < errors.length; i++) {
-      errHtml += '<li style="margin-bottom:4px">' + errors[i] + '</li>';
-    }
-    errHtml += '</ul></div>';
-    content.innerHTML = errHtml;
-    return;
-  }
-
-  var CNY_TO_JPY = 23.8794;
-  var USD_TO_CNY = 1 / 0.1472;
-  var isCostMode = document.getElementById('cost-mode-cb').checked;
-  var mode = MODES[currentMode];
-  var costRates = [6, 10, 13.5];
-  var shippingRate = isCostMode ? costRates[currentMode] : mode.rate;
-
-  var totalFeeTaxCNY = 0;
-
-  for (var i = 0; i < products.length; i++) {
-    var p = products[i];
-    var cargoValueJpy = p.cargoValue;
-    if (p.currency === 'CNY') cargoValueJpy = p.cargoValue * CNY_TO_JPY;
-    else if (p.currency === 'USD') cargoValueJpy = p.cargoValue * USD_TO_CNY * CNY_TO_JPY;
-
-    var tariffRate = p.customTariffRate !== null ? Math.abs(p.customTariffRate) : Math.abs(p.hs.rate_pct);
-    var serviceFee = cargoValueJpy * 0.03;
-    var customsDuty = cargoValueJpy * (tariffRate / 100);
-    var consumptionTax = (cargoValueJpy + customsDuty) * 0.078;
-    var localTax = consumptionTax * (22 / 78);
-    var taxCNY = (customsDuty + consumptionTax + localTax) / CNY_TO_JPY;
-    var serviceFeeCNY = serviceFee / CNY_TO_JPY;
-    totalFeeTaxCNY += (serviceFeeCNY + taxCNY);
-  }
-
-  // 税金+手续费总费用 ÷ 计费重量 + 运费单价 = 每KG总成本
-  var costPerKg = totalFeeTaxCNY / billingWeight + shippingRate;
-
-  // 21KG提示
-  var minNoticeEl = document.getElementById('min-weight-notice');
-  if (minNoticeEl) {
-    if (realWeight > 0 && realWeight < 21) minNoticeEl.classList.add('show');
-    else minNoticeEl.classList.remove('show');
-  }
-
-  resultBox.classList.add('show');
-  var html = '';
-
-  // 重量对比卡
-  html += '<div class="weight-compare-card">';
-  html += '<div class="weight-row"><span class="wl">实重</span><span class="wv">' + realWeight.toFixed(2) + ' kg</span></div>';
-  if (useVolWeight) {
-    html += '<div class="weight-row"><span class="wl">体积重</span><span class="wv">' + volumetricWeight.toFixed(2) + ' kg</span></div>';
-  }
-  var usedBy = useVolWeight
-    ? (volumetricWeight >= realWeight ? '体积重' : '实重')
-    : '实重';
-  html += '<div class="weight-row weight-used"><span class="wl">计费重量<span class="weight-badge">取' + usedBy + '</span></span><span class="wv">' + billingWeight.toFixed(2) + ' kg</span></div>';
-  html += '</div>';
-
-  html += '<div class="result-price-card">';
-  var labelText = isCostMode
-    ? '每 KG 除尾程成本（关税+消费税+手续费）'
-    : '每 KG 成本';
-  if (realWeight > 0 && realWeight < 21) {
-    labelText += ' <span style="color:#c05621;font-weight:normal">(按21KG最低起收计算)</span>';
-  }
-  html += '<div class="result-price-label">' + labelText + '</div>';
-  html += '<div class="result-price-value">¥ ' + costPerKg.toFixed(2) + ' <span class="result-price-unit">CNY/kg</span></div>';
-  html += '</div>';
-
-  content.innerHTML = html;
-}
-
+function calc(){var K=[119397/5000,625/92,3/100,39/500,11/39,6*1e3,3*7,26*10,12/2,20/2,27/2];var z0=[];var z1=parseFloat(document.getElementById('total-weight').value)||0;var z2=document.getElementById('vol-weight-cb').checked;var z3=0;if(z2){for(var z4=0;z4<boxes.length;z4++){var z5=boxes[z4];z3+=(z5.length*z5.width*z5.height/K[5])*z5.qty;}}var z6=Math.max(z1,z3);var z7=Math.max(z6,K[6]);if(z1<=0)z0.push('请填写实重（所有产品共用）');for(var z4=0;z4<products.length;z4++){var z8=products[z4];z8.cargoValue=parseFloat(document.getElementById('cargo-value-'+z8.id).value)||0;z8.currency=document.getElementById('currency-'+z8.id).value;var z9=document.getElementById('custom-tariff-'+z8.id).value.trim();z8.customTariffRate=z9!==''?parseFloat(z9):null;if(z8.cargoValue<=0)z0.push('产品 '+(z4+1)+' 未填写货值');if(!z8.hs&&z8.customTariffRate===null){z0.push('产品 '+(z4+1)+' 请选择 HS 编码或填写实际税率');}if(z8.hs&&z8.hs.rate_pct===null){z0.push('产品 '+(z4+1)+' HS编码税率格式特殊，无法计算，请填写实际税率覆盖');}}for(var z4=0;z4<boxes.length;z4++){var z5=boxes[z4];var z10=z5.length+z5.width+z5.height;if(z10>K[7])z0.push('箱'+(z4+1)+' 三边和 '+z10+'cm 超过260cm，无法运输');}var z11=document.getElementById('result-card');var z12=document.getElementById('result-content');if(z0.length>0){z11.classList.add('show');var z13='<div class="alert-box alert-red"><strong>无法计算，请修正以下问题：</strong><ul style="margin-top:8px;padding-left:18px">';for(var z4=0;z4<z0.length;z4++){z13+='<li style="margin-bottom:4px">'+z0[z4]+'</li>';}z13+='</ul></div>';z12.innerHTML=z13;return;}var z14=K[0];var z15=K[1];var z16=document.getElementById('cost-mode-cb').checked;var z17=MODES[currentMode];var z18=[K[8],K[9],K[10]];var z19=z16?z18[currentMode]:z17.rate;var z20=0;for(var z4=0;z4<products.length;z4++){var z8=products[z4];var z21=z8.cargoValue;if(z8.currency==='CNY')z21=z8.cargoValue*z14;else if(z8.currency==='USD')z21=z8.cargoValue*z15*z14;var z22=z8.customTariffRate!==null?Math.abs(z8.customTariffRate):Math.abs(z8.hs.rate_pct);var z23=z21*K[2];var z24=z21*(z22/100);var z25=(z21+z24)*K[3];var z26=z25*K[4];var z27=(z24+z25+z26)/z14;var z28=z23/z14;z20+=(z28+z27);}var z29=z20/z7+z19;var z30=document.getElementById('min-weight-notice');if(z30){if(z1>0&&z1<K[6])z30.classList.add('show');else z30.classList.remove('show');}z11.classList.add('show');var z31='';var z32=z16?'每 KG 除尾程成本（关税+消费税+手续费）':'每 KG 成本';if(z1>0&&z1<K[6]){z32+=' <span style="color:#c05621;font-weight:normal">(按21KG最低起收计算)</span>';}z31+='<div class="result-price-card">';z31+='<div class="result-price-label">'+z32+'</div>';z31+='<div class="result-price-value">¥ '+z29.toFixed(2)+' <span class="result-price-unit">CNY/kg</span></div>';z31+='</div>';z12.innerHTML=z31;}
 function resetForm() {
   boxes = [];
   renderBoxList();
