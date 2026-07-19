@@ -158,8 +158,36 @@ input[type="number"]{-moz-appearance:textfield}
 .weight-badge{display:inline-block;background:#c05621;color:#fff;font-size:0.7rem;
   border-radius:4px;padding:1px 6px;margin-left:6px}
 
+/* ===== Password Gate ===== */
+.__pw-gate{position:fixed;inset:0;background:linear-gradient(135deg,#1a365d 0%,#2c5282 100%);display:flex;align-items:center;justify-content:center;z-index:99999}
+.__pw-card{background:#fff;border-radius:16px;padding:36px 32px;width:min(380px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.__pw-card h2{margin:0 0 8px;font-size:1.2rem;color:#1a202c}
+.__pw-sub{margin:0 0 22px;color:#718096;font-size:.85rem}
+.__pw-card input{width:100%;padding:12px 14px;font-size:1rem;border:2px solid #e2e8f0;border-radius:8px;outline:none;transition:border-color .15s;letter-spacing:1px}
+.__pw-card input:focus{border-color:#4299e1}
+.__pw-card button{margin-top:14px;width:100%;padding:12px;font-size:1rem;font-weight:600;color:#fff;background:#3182ce;border:none;border-radius:8px;cursor:pointer;transition:background .15s}
+.__pw-card button:hover{background:#2c5282}
+.__pw-err{color:#e53e3e;font-size:.85rem;min-height:1.2em;margin:10px 0 0}
+.__pw-err:empty{margin:0}
+.__pw-hint{color:#a0aec8;font-size:.72rem;margin-top:16px}
+.__pw-lock-btn{margin-left:12px;padding:2px 10px;font-size:.72rem;background:transparent;border:1px solid #cbd5e0;border-radius:4px;color:#718096;cursor:pointer;vertical-align:middle}
+.__pw-lock-btn:hover{background:#edf2f7;color:#2d3748}
+.__pw-shake{animation:__pwShake .35s}
+@keyframes __pwShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
 </style></head>
 <body>
+<!-- ===== Password Gate ===== -->
+<div id="__pwGate" class="__pw-gate">
+  <div class="__pw-card">
+    <h2>🔒 中日贸易包税报价工具</h2>
+    <p class="__pw-sub">请输入访问密码</p>
+    <input type="password" id="__pwInput" placeholder="请输入密码" autocomplete="off" autofocus>
+    <button id="__pwBtn" type="button">进入</button>
+    <p id="__pwErr" class="__pw-err"></p>
+    <p class="__pw-hint">密码错误请联系管理员</p>
+  </div>
+</div>
 <div class="container">
   <h1>中日贸易包税报价</h1>
   <p class="subtitle">选择发货方式，填写信息，自动计算报价</p>
@@ -326,9 +354,42 @@ input[type="number"]{-moz-appearance:textfield}
   </div>
 </div>
 
-<div class="footer">中日贸易包税报价工具 - v3.3</div>
+<div class="footer">中日贸易包税报价工具 - v3.4 <button id="__pwLockBtn" class="__pw-lock-btn" type="button">🔒 锁定</button></div>
 
 <script>
+(function(){
+  // ===== Password Gate (Web Crypto SHA-256) =====
+  var HASH = "2de4a64d5dc1fc36dd973cb550f0c26773983b09d7cccddc2bc8a47e4db83230";
+  var FLAG = "quote_unlocked";
+  var gate = document.getElementById('__pwGate');
+  var input = document.getElementById('__pwInput');
+  var btn = document.getElementById('__pwBtn');
+  var err = document.getElementById('__pwErr');
+  var lockBtn = document.getElementById('__pwLockBtn');
+  function __pwHide(){ gate.style.display='none'; }
+  function __pwShow(m){ if(m) err.textContent=m; else err.textContent=''; gate.style.display='flex'; input.value=''; setTimeout(function(){ input.focus(); }, 50); }
+  function __pwShake(){ var c=gate.querySelector('.__pw-card'); c.classList.remove('__pw-shake'); void c.offsetWidth; c.classList.add('__pw-shake'); }
+  function __pwCheck(){
+    var v=input.value;
+    if(!v){ __pwShow('请输入密码'); return; }
+    if(!window.crypto||!crypto.subtle||!crypto.subtle.digest){
+      __pwShow('此环境不支持密码校验（请用 HTTPS 网址打开，例如 GitHub Pages）'); return;
+    }
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)).then(function(buf){
+      var b=new Uint8Array(buf); var hex='';
+      for(var i=0;i<b.length;i++){ var h=b[i].toString(16); if(h.length<2) h='0'+h; hex+=h; }
+      if(hex===HASH){
+        try{ localStorage.setItem(FLAG,'1'); }catch(e){}
+        __pwHide();
+      } else { __pwShake(); __pwShow('密码错误'); }
+    }).catch(function(){ __pwShake(); __pwShow('校验失败，请重试'); });
+  }
+  btn.addEventListener('click', __pwCheck);
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') __pwCheck(); });
+  if(lockBtn){ lockBtn.addEventListener('click', function(){ try{ localStorage.removeItem(FLAG); }catch(e){} __pwShow(''); }); }
+  var __pwOk=false; try{ __pwOk=localStorage.getItem(FLAG)==='1'; }catch(e){}
+  if(__pwOk) __pwHide(); else __pwShow('');
+})();
 var MODES=[
  {name:'海运货物',rate:14/2},
  {name:'空运普货',rate:25/2},
